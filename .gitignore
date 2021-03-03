@@ -1,0 +1,13 @@
+node_modules
+build
+yarn-error.log
+npm-debug.log
+yarn-error.log
+.eslintcache
+react-app-env.d.ts
+bak
+*.code-workspace
+/cache/
+/data/
+/config.json
+/NOTES*
