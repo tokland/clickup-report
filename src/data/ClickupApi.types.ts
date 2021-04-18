@@ -40,18 +40,7 @@ export interface TimeEntry {
     tags: [];
     source: "clickup";
     at: ApiDate;
-    task:
-        | string
-        | {
-              id: TaskId;
-              name: string;
-              status: {
-                  status: "inbox";
-                  color: string;
-                  type: "open";
-                  orderindex: number;
-              };
-          };
+    task: string | { id: TaskId; name: string }; // "0" when no task assigned
     user: {
         id: UserId;
         username: string;

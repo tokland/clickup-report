@@ -38,7 +38,7 @@ export class TimeSummaryClickupRepository {
         return {
             taskId: timeEntry.task.id,
             taskName: timeEntry.task.name,
-            folderName: [task.folder.name, task.list.name].join(" - "),
+            projectName: [task.folder.name, task.list.name].join(" - "),
             date: new Date(parseInt(timeEntry.start)),
             duration: parseInt(timeEntry.duration) / 1000 / 3600,
         };
@@ -77,7 +77,7 @@ export class TimeSummaryClickupRepository {
 
     private getTimeSummary(timeTasks: TimeTask[], dateRange: DateRange): TimeSummary {
         const timeByFolder = _(timeTasks)
-            .groupBy(timeTask => timeTask.folderName)
+            .groupBy(timeTask => timeTask.projectName)
             .mapValues((timeTasksForFolder, folderName) => ({
                 folderName,
                 duration: _.sum(timeTasksForFolder.map(tt => tt.duration)),
