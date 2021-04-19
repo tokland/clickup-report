@@ -1,30 +1,36 @@
 import _ from "lodash";
 import fs from "fs";
 import path from "path";
-import { ArgumentParser } from "argparse";
-import { Codec, Either, optional, string } from "purify-ts";
+import { Codec, Either, string } from "purify-ts";
 
 import { ClickupApi } from "../data/ClickupApi";
 import { TimeSummaryClickupRepository } from "../data/TimeSummaryClickupRepository";
 import { parseDate } from "../utils";
 import { ShowTimeSummaryUseCase } from "../domain/usecases/ShowTimeSummaryUseCase";
+import { parseArgs } from "./arguments-parser";
 
 function main() {
-    const parser = new ArgumentParser({
+    const args = parseArgs({
         description: "Show time report from ClickUp",
+        options: {
+            startDate: {
+                short: "-d",
+                long: "--start-date",
+                help: "Start date",
+                required: true as const,
+                type: "string" as const,
+                metavar: "YYYY-MM-DD",
+            },
+            endDate: {
+                short: "-e",
+                long: "--end-date",
+                help: "End date",
+                required: false as const,
+                type: "string" as const,
+                metavar: "YYYY-MM-DD",
+            },
+        },
     });
-
-    parser.add_argument("-d", "--start-date", {
-        help: "Start date, ISO format YYYY-MM-DD",
-        required: true,
-        dest: "startDate",
-    });
-    parser.add_argument("-e", "--end-date", {
-        help: "End date, ISO format YYYY-MM-DD",
-        dest: "endDate",
-    });
-
-    const args = getOrThrowError(argsCodec.decode(parser.parse_args()));
     const startDate = parseDate(args.startDate);
     const endDate = args.endDate ? parseDate(args.endDate) : startDate.endOf("month");
 
@@ -54,11 +60,6 @@ const configCodec = Codec.interface({
     token: string,
     teamName: string,
     userEmail: string,
-});
-
-const argsCodec = Codec.interface({
-    startDate: string,
-    endDate: optional(string),
 });
 
 main();
