@@ -4,7 +4,7 @@ import codec from "purify-ts/Codec";
 
 import { ClickupApi } from "../data/ClickupApi";
 import { TimeSummaryClickupRepository } from "../data/TimeSummaryClickupRepository";
-import { parseDate } from "../utils";
+import { parseDate } from "../date-utils";
 import { ShowTimeSummaryUseCase } from "../domain/usecases/ShowTimeSummaryUseCase";
 import { parseArgs } from "./arguments-parser";
 import { getValidatedJsonFile } from "./json";
@@ -34,8 +34,8 @@ function main() {
     const startDate = parseDate(args.startDate);
     const endDate = args.endDate ? parseDate(args.endDate) : startDate.endOf("month");
 
-    const configPath = path.join(__dirname, "../../config.json");
-    console.debug("Using config file:", configPath);
+    const configPath = path.join(__dirname, "../..", "config.json");
+    console.error("Using config file:", configPath);
     const config = getValidatedJsonFile({
         path: configPath,
         codec: codec.Codec.interface({
@@ -45,9 +45,10 @@ function main() {
         }),
     });
 
-    const cacheDir = path.join(__dirname, "../../cache");
+    const cacheDir = path.join(__dirname, "../..", "cache");
     const api = new ClickupApi({ token: config.token, cacheDir });
-    const timeSummaryRepository = new TimeSummaryClickupRepository(api, config);
+    const userFilter = { teamName: config.teamName, userEmail: config.userEmail };
+    const timeSummaryRepository = new TimeSummaryClickupRepository(api, userFilter);
     const showTimeSummary = new ShowTimeSummaryUseCase(timeSummaryRepository);
 
     showTimeSummary.execute({

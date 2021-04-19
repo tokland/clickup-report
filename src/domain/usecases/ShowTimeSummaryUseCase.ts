@@ -1,6 +1,6 @@
 import { DateRange, TimeSummary } from "../entities";
 import { TimeSummaryClickupRepository } from "../../data/TimeSummaryClickupRepository";
-import { getStringDate } from "../../utils";
+import { getStringDate } from "../../date-utils";
 
 export class ShowTimeSummaryUseCase {
     constructor(private timeSummaryClickupRepository: TimeSummaryClickupRepository) {}
