@@ -3,12 +3,12 @@ import { ArgumentParser } from "argparse";
 import { Codec, Either, string, number, optional } from "purify-ts";
 
 export interface Option {
+    type: OptionType;
     short: string;
     long: string;
     help: string;
     metavar?: string;
     required?: boolean;
-    type: OptionType;
 }
 
 export function parseArgs<Options extends OptionsRecord>(allOptions: {

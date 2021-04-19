@@ -1,13 +1,13 @@
 import _ from "lodash";
-import fs from "fs";
 import path from "path";
-import { Codec, Either, string } from "purify-ts";
+import codec from "purify-ts/Codec";
 
 import { ClickupApi } from "../data/ClickupApi";
 import { TimeSummaryClickupRepository } from "../data/TimeSummaryClickupRepository";
 import { parseDate } from "../utils";
 import { ShowTimeSummaryUseCase } from "../domain/usecases/ShowTimeSummaryUseCase";
 import { parseArgs } from "./arguments-parser";
+import { getValidatedJsonFile } from "./json";
 
 function main() {
     const args = parseArgs({
@@ -17,16 +17,16 @@ function main() {
                 short: "-d",
                 long: "--start-date",
                 help: "Start date",
-                required: true as const,
-                type: "string" as const,
+                required: true,
+                type: "string",
                 metavar: "YYYY-MM-DD",
             },
             endDate: {
                 short: "-e",
                 long: "--end-date",
                 help: "End date",
-                required: false as const,
-                type: "string" as const,
+                required: false,
+                type: "string",
                 metavar: "YYYY-MM-DD",
             },
         },
@@ -36,8 +36,14 @@ function main() {
 
     const configPath = path.join(__dirname, "../../config.json");
     console.debug("Using config file:", configPath);
-    const configNotValidated = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    const config = getOrThrowError(configCodec.decode(configNotValidated));
+    const config = getValidatedJsonFile({
+        path: configPath,
+        codec: codec.Codec.interface({
+            token: codec.string,
+            teamName: codec.string,
+            userEmail: codec.string,
+        }),
+    });
 
     const cacheDir = path.join(__dirname, "../../cache");
     const api = new ClickupApi({ token: config.token, cacheDir });
@@ -51,15 +57,5 @@ function main() {
         },
     });
 }
-
-export function getOrThrowError<Data>(either: Either<string, Data>): Data {
-    return either.mapLeft(err => new Error(err)).unsafeCoerce();
-}
-
-const configCodec = Codec.interface({
-    token: string,
-    teamName: string,
-    userEmail: string,
-});
 
 main();
