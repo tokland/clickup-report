@@ -1,84 +1,80 @@
 import _ from "lodash";
 import { ArgumentParser } from "argparse";
-import { Codec, Either, string, number, optional } from "purify-ts";
 
-export interface Option {
-    type: OptionType;
+export interface Option<T> {
     short: string;
     long: string;
     help: string;
     metavar?: string;
     required?: boolean;
+    mapper(s: string): T;
 }
 
-export function parseArgs<Options extends OptionsRecord>(allOptions: {
+export function parseArgs<Options extends OptionsRecord>(parseOptions: {
     description: string;
     options: Options;
 }): Expand<GetType<Options>> {
-    const { description, options } = allOptions;
+    const { description, options } = parseOptions;
     const parser = new ArgumentParser({ description: description });
-    const optionsCodecs = getCodec(options);
-    const argsCodec = Codec.interface(optionsCodecs);
 
     _(options).each((option, key) => {
         parser.add_argument(option.short, option.long, {
+            dest: key,
             help: option.help,
             required: option.required,
-            dest: key,
             metavar: option.metavar,
         });
     });
 
-    return getOrThrowError(argsCodec.decode(parser.parse_args()));
+    const args = parser.parse_args();
+    return mapArgs(args, options);
+}
+
+function mapArgs<Options extends OptionsRecord>(
+    args: Record<string, any>,
+    options: Options
+): GetType<Options> {
+    return _.mapValues(options, (option, key) => {
+        const value = args[key];
+        const res = value === undefined ? undefined : option.mapper(value);
+        return res as any;
+    });
 }
 
 /* Internal */
 
-const mapping = {
-    string: string,
-    number: number,
-};
-
 type Expand<T> = {} & { [P in keyof T]: T[P] };
 
-type OptionsRecord = Record<string, Option>;
-
-type OptionTypeMapping = { string: string; number: number };
-
-type UnionOfCodecTypes = Codec<OptionTypeMapping[keyof OptionTypeMapping]>;
-
-type OptionType = keyof OptionTypeMapping;
+type OptionsRecord = Record<string, Option<unknown>>;
 
 type GetType<Opts extends OptionsRecord> = {
     [K in keyof Opts]:
-        | OptionTypeMapping[Opts[K]["type"]]
+        | ReturnType<Opts[K]["mapper"]>
         | (Opts[K]["required"] extends true ? never : undefined);
 };
-
-type GetCodec<Opts extends OptionsRecord> = {
-    [K in keyof GetType<Opts>]: Codec<GetType<Opts>[K]>;
-};
-
-function getCodec<Options extends OptionsRecord>(options: Options): GetCodec<Options> {
-    const options2 = _.mapValues(options, option => {
-        const type = mapping[option.type];
-        return option.required ? type : optional(type as UnionOfCodecTypes);
-    });
-    return (options2 as unknown) as GetCodec<Options>;
-}
-
-function getOrThrowError<Data>(either: Either<string, Data>): Data {
-    return either.mapLeft(err => new Error(err)).unsafeCoerce();
-}
 
 /* Testing */
 
 type Options = {
-    date: { short: string; long: string; help: string; required: true; type: "string" };
-    length: { short: string; long: string; help: string; required: false; type: "number" };
+    date: {
+        short: string;
+        long: string;
+        help: string;
+        required: true;
+        mapper(s: string): string;
+    };
+    length: {
+        short: string;
+        long: string;
+        help: string;
+        required: false;
+        mapper: (s: string) => number;
+    };
 };
 
 type OptionsType = GetType<Options>;
+
+// TODO: asserts
 
 const _testOptionsType1: OptionsType = { date: "2020", length: undefined };
 const _testOptionsType2: OptionsType = { date: "2020", length: 10 };

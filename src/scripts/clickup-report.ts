@@ -1,6 +1,6 @@
 import _ from "lodash";
 import path from "path";
-import codec from "purify-ts/Codec";
+import { Codec, string } from "purify-ts/Codec";
 
 import { ClickupApi } from "../data/ClickupApi";
 import { TimeSummaryClickupRepository } from "../data/TimeSummaryClickupRepository";
@@ -18,7 +18,7 @@ function main() {
                 long: "--start-date",
                 help: "Start date",
                 required: true,
-                type: "string",
+                mapper: String,
                 metavar: "YYYY-MM-DD",
             },
             endDate: {
@@ -26,7 +26,7 @@ function main() {
                 long: "--end-date",
                 help: "End date",
                 required: false,
-                type: "string",
+                mapper: String,
                 metavar: "YYYY-MM-DD",
             },
         },
@@ -38,10 +38,10 @@ function main() {
     console.error("Using config file:", configPath);
     const config = getValidatedJsonFile({
         path: configPath,
-        codec: codec.Codec.interface({
-            token: codec.string,
-            teamName: codec.string,
-            userEmail: codec.string,
+        codec: Codec.interface({
+            token: string,
+            teamName: string,
+            userEmail: string,
         }),
     });
 
