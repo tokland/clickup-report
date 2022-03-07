@@ -18,5 +18,5 @@ $ yarn get-report -d 2021-03
 Get a summary report for a specific interval:
 
 ```
-$ yarn get-report src/scripts/clickup-report.ts -d 2021-01-01 -e 2021-03-15
+$ yarn get-report -d 2021-01-01 -e 2021-03-15
 ```
