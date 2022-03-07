@@ -32,7 +32,7 @@ function main() {
         },
     });
     const startDate = parseDate(args.startDate);
-    const endDate = args.endDate ? parseDate(args.endDate) : startDate.endOf("month");
+    const endDate = args.endDate ? parseDate(args.endDate).endOf("day") : startDate.endOf("month");
 
     const configPath = path.join(__dirname, "../..", "config.json");
     console.error("Using config file:", configPath);
