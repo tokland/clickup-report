@@ -12,7 +12,7 @@ interface TimeEntriesInfo {
 
 export interface UserFilter {
     teamName: string;
-    userEmail: string;
+    userEmail: string | undefined;
 }
 
 export class TimeSummaryClickupRepository {
@@ -36,8 +36,10 @@ export class TimeSummaryClickupRepository {
         if (!task) throw new Error(`Cannot find task for time entry: ${timeEntryJson}`);
 
         return {
+            username: timeEntry.user.username,
             taskId: task.id,
             taskName: task.name,
+            list: { name: task.list.name },
             projectName: [task.folder.name, task.list.name].join(" - "),
             date: new Date(parseInt(timeEntry.start)),
             duration: parseInt(timeEntry.duration) / 1000 / 3600,
@@ -60,9 +62,12 @@ export class TimeSummaryClickupRepository {
                     startDate: dateRange.start,
                     endDate: dateRange.end,
                 })
-                .map(timeEntries => timeEntries.filter(entry => entry.user.email === userEmail));
+                .map(timeEntries =>
+                    timeEntries.filter(entry => !userEmail || entry.user.email === userEmail)
+                );
 
             return timeEntries$.flatMap(timeEntries => {
+                // console.log(timeEntries);
                 const tasks$ = _(timeEntries)
                     .map(timeEntry => (typeof timeEntry.task !== "string" ? timeEntry.task : null))
                     .compact()
