@@ -36,11 +36,12 @@ export class TimeSummaryClickupRepository {
         if (!task) throw new Error(`Cannot find task for time entry: ${timeEntryJson}`);
 
         return {
-            taskId: timeEntry.task.id,
-            taskName: timeEntry.task.name,
+            taskId: task.id,
+            taskName: task.name,
             projectName: [task.folder.name, task.list.name].join(" - "),
             date: new Date(parseInt(timeEntry.start)),
             duration: parseInt(timeEntry.duration) / 1000 / 3600,
+            note: timeEntry.description,
         };
     }
 

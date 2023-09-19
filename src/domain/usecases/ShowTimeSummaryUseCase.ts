@@ -21,16 +21,36 @@ export class ShowTimeSummaryUseCase {
         return [
             `Period: ${getStringDate(dateRange.start)} -> ${getStringDate(dateRange.end)}`,
             `Time entries: ${timeTasks.length}`,
-            `Total: ${showDuration(timeSummary.total)}`,
             "---",
             ...timeSummary.timeByFolder.map(({ folderName, duration: durationH }) => {
                 return `${folderName}: ${showDuration(durationH)}`;
             }),
+            "---",
+            ...timeTasks.map(task =>
+                [
+                    task.date.toDateString(),
+                    showHumanDuration(task.duration),
+                    task.taskName,
+                    task.note,
+                    `https://app.clickup.com/t/${task.taskId}`,
+                ].join(" - ")
+            ),
+            //`Total: ${showDuration(timeSummary.total)} (${showHumanDuration(timeSummary.total)})`,
+            `Total: ${showHumanDuration(timeSummary.total)}`,
         ].join("\n");
     }
 }
 
-export function showDuration(duration: number): string {
-    const s = duration.toFixed(2);
+export function showDuration(hours: number): string {
+    const s = hours.toFixed(2);
     return `${s}h`;
+}
+
+export function showHumanDuration(hours: number): string {
+    const hoursInt = Math.floor(hours);
+    const decimal = hours % 1;
+    const m = Math.round(decimal * 60)
+        .toString()
+        .padStart(2, "0");
+    return `${hoursInt}h${m}m`;
 }

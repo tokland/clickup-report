@@ -37,9 +37,7 @@ export class ClickupApi {
             headers: { Authorization: this.options.token },
             method: "GET",
             url,
-            cache: {
-                ignoreCache: !cache,
-            },
+            cache: { ignoreCache: !cache },
         });
 
         //return withMinTime(data$, minRequestTime);

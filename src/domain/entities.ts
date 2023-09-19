@@ -11,6 +11,7 @@ export interface TimeTask {
     projectName: string;
     date: Date;
     duration: number; // hours
+    note: string;
 }
 
 export interface DateRange {
