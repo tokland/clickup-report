@@ -36,20 +36,24 @@ export class ShowSummaryByUserAndListUseCase {
 
     private getStringEntriesByList(username: string, tasks: TimeTask[]): string {
         return [
-            `- ${username}:`,
+            `- ${username} (${getTasksTotalDuration(tasks)}):`,
             ..._(tasks)
                 .groupBy(task => task.list.name)
                 .toPairs()
                 .map(([listName, tasks]) => {
-                    return `  - ${listName}: ${showHumanDuration(
-                        _(tasks)
-                            .map(task => task.duration)
-                            .sum()
-                    )}`;
+                    return `  - ${listName}: ${getTasksTotalDuration(tasks)}`;
                 })
                 .value(),
         ].join("\n");
     }
+}
+
+function getTasksTotalDuration(tasks: TimeTask[]): string {
+    return showHumanDuration(
+        _(tasks)
+            .map(task => task.duration)
+            .sum()
+    );
 }
 
 function _showDuration(hours: number): string {
