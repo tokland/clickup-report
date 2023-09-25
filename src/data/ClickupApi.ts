@@ -2,7 +2,15 @@ import _ from "lodash";
 import QueryString from "qs";
 import axiosCacheAdapter from "axios-cache-adapter";
 
-import { ApiDate, Folder, FolderId, FutureData, GetTasksOptions, TaskId } from "./ClickupApi.types";
+import {
+    ApiDate,
+    Folder,
+    FolderId,
+    FutureData,
+    GetTasksOptions,
+    TaskId,
+    UserId,
+} from "./ClickupApi.types";
 import { List, Space, SpaceId, Task, Team, TimeEntry } from "./ClickupApi.types";
 import { Future, wait } from "../utils/future";
 import { axiosRequest, defaultBuilder, DefaultError } from "./axios/future-axios";
@@ -52,13 +60,15 @@ export class ClickupApi {
         teamId: string;
         startDate: Date;
         endDate: Date;
+        assignee: UserId[] | undefined;
     }): FutureData<TimeEntry[]> {
-        const { teamId, startDate, endDate } = options;
+        const { teamId, startDate, endDate, assignee } = options;
         return this.get<{ data: TimeEntry[] }>(`/team/${teamId}/time_entries`, {
             cache: false,
             params: {
                 start_date: getApiDate(startDate),
                 end_date: getApiDate(endDate),
+                ...(assignee ? { assignee: assignee.join(",") } : {}),
             },
         }).map(res => res.data);
     }

@@ -1,4 +1,4 @@
-import { DateRange, TimeSummary } from "../entities";
+import { DateRange, TimeSummary, TimeTask } from "../entities";
 import _ from "lodash";
 import { TimeSummaryClickupRepository } from "../../data/TimeSummaryClickupRepository";
 import { getStringDate } from "../../date-utils";
@@ -8,7 +8,10 @@ export class ShowSummaryByUserAndListUseCase {
 
     execute(options: { dateRange: DateRange }): void {
         const { dateRange } = options;
-        const timeSummary$ = this.timeSummaryClickupRepository.get(dateRange);
+        const timeSummary$ = this.timeSummaryClickupRepository.get({
+            ...dateRange,
+            allUsers: true,
+        });
 
         timeSummary$.run(timeSummary => {
             const summaryReportString = this.timeSummaryToString(timeSummary);
@@ -26,33 +29,35 @@ export class ShowSummaryByUserAndListUseCase {
             ..._(timeTasks)
                 .groupBy(task => task.username)
                 .toPairs()
-                .map(([username, tasks]) =>
-                    [
-                        `- ${username}:`,
-                        ..._(tasks)
-                            .groupBy(task => task.list.name)
-                            .toPairs()
-                            .map(([listName, tasks]) => {
-                                return `  - ${listName}: ${showHumanDuration(
-                                    _(tasks)
-                                        .map(task => task.duration)
-                                        .sum()
-                                )}`;
-                            })
-                            .value(),
-                    ].join("\n")
-                )
+                .map(([username, tasks]) => this.getStringEntriesByList(username, tasks))
+                .value(),
+        ].join("\n");
+    }
+
+    private getStringEntriesByList(username: string, tasks: TimeTask[]): string {
+        return [
+            `- ${username}:`,
+            ..._(tasks)
+                .groupBy(task => task.list.name)
+                .toPairs()
+                .map(([listName, tasks]) => {
+                    return `  - ${listName}: ${showHumanDuration(
+                        _(tasks)
+                            .map(task => task.duration)
+                            .sum()
+                    )}`;
+                })
                 .value(),
         ].join("\n");
     }
 }
 
-export function showDuration(hours: number): string {
+function _showDuration(hours: number): string {
     const s = hours.toFixed(2);
     return `${s}h`;
 }
 
-export function showHumanDuration(hours: number): string {
+function showHumanDuration(hours: number): string {
     const hoursInt = Math.floor(hours);
     const decimal = hours % 1;
     const m = Math.round(decimal * 60)
