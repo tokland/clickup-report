@@ -6,11 +6,14 @@ export interface TimeSummary {
 }
 
 export interface TimeTask {
+    username: string;
     taskName: string;
     taskId: string;
+    list: { name: string };
     projectName: string;
     date: Date;
     duration: number; // hours
+    note: string;
 }
 
 export interface DateRange {

@@ -12,13 +12,17 @@ interface TimeEntriesInfo {
 
 export interface UserFilter {
     teamName: string;
-    userEmail: string;
+    userEmail: string | undefined;
+}
+
+interface TimeSummaryClickupRepositoryGetOptions extends DateRange {
+    allUsers: boolean;
 }
 
 export class TimeSummaryClickupRepository {
     constructor(private api: ClickupApi, private userFilter: UserFilter) {}
 
-    get(dateRange: DateRange): FutureData<TimeSummary> {
+    get(dateRange: TimeSummaryClickupRepositoryGetOptions): FutureData<TimeSummary> {
         const data$ = this.getData(dateRange);
         const timeTasks$ = data$.map(data => {
             const tasksById = _.keyBy(data.tasks, task => task.id);
@@ -36,15 +40,18 @@ export class TimeSummaryClickupRepository {
         if (!task) throw new Error(`Cannot find task for time entry: ${timeEntryJson}`);
 
         return {
-            taskId: timeEntry.task.id,
-            taskName: timeEntry.task.name,
+            username: timeEntry.user.username,
+            taskId: task.id,
+            taskName: task.name,
+            list: { name: task.list.name },
             projectName: [task.folder.name, task.list.name].join(" - "),
             date: new Date(parseInt(timeEntry.start)),
             duration: parseInt(timeEntry.duration) / 1000 / 3600,
+            note: timeEntry.description,
         };
     }
 
-    private getData(dateRange: DateRange): FutureData<TimeEntriesInfo> {
+    private getData(options: TimeSummaryClickupRepositoryGetOptions): FutureData<TimeEntriesInfo> {
         const { api, userFilter: config } = this;
         const { userEmail } = config;
         const team$ = api
@@ -56,12 +63,18 @@ export class TimeSummaryClickupRepository {
             const timeEntries$ = api
                 .getTimeEntries({
                     teamId: team.id,
-                    startDate: dateRange.start,
-                    endDate: dateRange.end,
+                    startDate: options.start,
+                    endDate: options.end,
+                    assignee: options.allUsers
+                        ? team.members.map(member => member.user.id)
+                        : undefined,
                 })
-                .map(timeEntries => timeEntries.filter(entry => entry.user.email === userEmail));
+                .map(timeEntries =>
+                    timeEntries.filter(entry => !userEmail || entry.user.email === userEmail)
+                );
 
             return timeEntries$.flatMap(timeEntries => {
+                // console.log(timeEntries);
                 const tasks$ = _(timeEntries)
                     .map(timeEntry => (typeof timeEntry.task !== "string" ? timeEntry.task : null))
                     .compact()
