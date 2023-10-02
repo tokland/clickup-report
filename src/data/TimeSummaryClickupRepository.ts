@@ -29,13 +29,17 @@ export class TimeSummaryClickupRepository {
             return data.timeEntries.map(timeEntry => this.getTimeTask(timeEntry, tasksById));
         });
 
-        return timeTasks$.map(timeTasks => this.getTimeSummary(timeTasks, dateRange));
+        return timeTasks$.map(timeTasks => this.getTimeSummary(_.compact(timeTasks), dateRange));
     }
 
-    private getTimeTask(timeEntry: TimeEntry, tasksById: Record<TaskId, Task>): TimeTask {
+    private getTimeTask(
+        timeEntry: TimeEntry,
+        tasksById: Record<TaskId, Task>
+    ): TimeTask | undefined {
         const timeEntryJson = JSON.stringify(timeEntry, null, 4);
         if (typeof timeEntry.task === "string") throw new Error(`No task for: ${timeEntryJson}`);
 
+        if (!timeEntry.task) return;
         const task = tasksById[timeEntry.task.id];
         if (!task) throw new Error(`Cannot find task for time entry: ${timeEntryJson}`);
 
@@ -48,6 +52,7 @@ export class TimeSummaryClickupRepository {
             date: new Date(parseInt(timeEntry.start)),
             duration: parseInt(timeEntry.duration) / 1000 / 3600,
             note: timeEntry.description,
+            billable: timeEntry.billable,
         };
     }
 
@@ -67,14 +72,15 @@ export class TimeSummaryClickupRepository {
                     endDate: options.end,
                     assignee: options.allUsers
                         ? team.members.map(member => member.user.id)
-                        : undefined,
+                        : team.members
+                              .filter(member => member.user.email === this.userFilter.userEmail)
+                              .map(member => member.user.id),
                 })
                 .map(timeEntries =>
                     timeEntries.filter(entry => !userEmail || entry.user.email === userEmail)
                 );
 
             return timeEntries$.flatMap(timeEntries => {
-                // console.log(timeEntries);
                 const tasks$ = _(timeEntries)
                     .map(timeEntry => (typeof timeEntry.task !== "string" ? timeEntry.task : null))
                     .compact()

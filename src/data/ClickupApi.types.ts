@@ -40,7 +40,7 @@ export interface TimeEntry {
     tags: [];
     source: "clickup";
     at: ApiDate;
-    task: string | { id: TaskId; name: string }; // "0" when no task assigned
+    task: string | { id: TaskId; name: string } | undefined; // "0" when no task assigned
     user: {
         id: UserId;
         username: string;

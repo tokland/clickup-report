@@ -36,29 +36,25 @@ export class ShowSummaryByUserAndListUseCase {
 
     private getStringEntriesByList(username: string, tasks: TimeTask[]): string {
         return [
-            `- ${username} (${getTasksTotalDuration(tasks)}):`,
+            `- ${username}: ${getTasksTotalDuration(tasks)}`,
             ..._(tasks)
                 .groupBy(task => task.list.name)
                 .toPairs()
-                .map(([listName, tasks]) => {
-                    return `  - ${listName}: ${getTasksTotalDuration(tasks)}`;
+                .map(([listName, tasksForList]) => {
+                    return `  - ${listName}: ${getTasksTotalDuration(tasksForList)}`;
                 })
                 .value(),
         ].join("\n");
     }
 }
 
-function getTasksTotalDuration(tasks: TimeTask[]): string {
-    return showHumanDuration(
-        _(tasks)
-            .map(task => task.duration)
-            .sum()
-    );
-}
+function getTasksTotalDuration(timeTask: TimeTask[]): string {
+    const [billable, nonBillable] = _.partition(timeTask, timeTask => timeTask.duration);
+    const billableDuration = _.sum(billable.map(task => task.duration));
+    const nonBillableDuration = _.sum(nonBillable.map(task => task.duration));
+    const total = billableDuration + nonBillableDuration;
 
-function _showDuration(hours: number): string {
-    const s = hours.toFixed(2);
-    return `${s}h`;
+    return `${showHumanDuration(total)} (billable: ${showHumanDuration(billableDuration)})`;
 }
 
 function showHumanDuration(hours: number): string {

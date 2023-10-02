@@ -14,6 +14,7 @@ export interface TimeTask {
     date: Date;
     duration: number; // hours
     note: string;
+    billable: boolean;
 }
 
 export interface DateRange {

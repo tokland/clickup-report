@@ -7,7 +7,10 @@ export class ShowTimeSummaryUseCase {
 
     execute(options: { dateRange: DateRange }): void {
         const { dateRange } = options;
-        const timeSummary$ = this.timeSummaryClickupRepository.get(dateRange);
+        const timeSummary$ = this.timeSummaryClickupRepository.get({
+            ...dateRange,
+            allUsers: false,
+        });
 
         timeSummary$.run(timeSummary => {
             const summaryReportString = this.timeSummaryToString(timeSummary);
@@ -35,7 +38,6 @@ export class ShowTimeSummaryUseCase {
                     `https://app.clickup.com/t/${task.taskId}`,
                 ].join(" - ")
             ),
-            //`Total: ${showDuration(timeSummary.total)} (${showHumanDuration(timeSummary.total)})`,
             `Total: ${showHumanDuration(timeSummary.total)}`,
         ].join("\n");
     }
