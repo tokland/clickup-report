@@ -37,11 +37,16 @@ export class TimeSummaryClickupRepository {
         tasksById: Record<TaskId, Task>
     ): TimeTask | undefined {
         const timeEntryJson = JSON.stringify(timeEntry, null, 4);
-        if (typeof timeEntry.task === "string") throw new Error(`No task for: ${timeEntryJson}`);
-
-        if (!timeEntry.task) return;
+        if (typeof timeEntry.task === "string" || !timeEntry.task) {
+            console.error(`No task for: ${timeEntryJson}`);
+            return;
+        }
         const task = tasksById[timeEntry.task.id];
-        if (!task) throw new Error(`Cannot find task for time entry: ${timeEntryJson}`);
+
+        if (!task) {
+            console.error(`Cannot find task for time entry: ${timeEntryJson}`);
+            return;
+        }
 
         return {
             username: timeEntry.user.username,
