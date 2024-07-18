@@ -32,6 +32,7 @@ export class ShowTimeSummaryUseCase {
             ...timeTasks.map(task =>
                 [
                     task.date.toDateString(),
+                    task.projectName,
                     showHumanDuration(task.duration),
                     task.taskName,
                     task.note,
