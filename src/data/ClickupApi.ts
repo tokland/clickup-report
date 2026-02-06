@@ -23,7 +23,7 @@ const initialPage = 0;
 
 export class ClickupApi {
     instance: AxiosInstance;
-    baseUrl = "https://app.clickup.com/api/v2";
+    baseUrl = "https://api.clickup.com/api/v2";
 
     constructor(private options: { token: string; cacheDir: string }) {
         const store = new FilesystemStore({ cacheDir: options.cacheDir });
@@ -40,11 +40,12 @@ export class ClickupApi {
         const { cache = true, params = {} } = options;
         const query = QueryString.stringify(params, { addQueryPrefix: true });
         const url = this.baseUrl + endpoint + query;
+        console.debug(`GET ${url}`);
 
         const data$ = axiosRequest<DefaultError, T>(this.instance, defaultBuilder, {
             headers: { Authorization: this.options.token },
             method: "GET",
-            url,
+            url: url,
             cache: { ignoreCache: !cache },
         });
 

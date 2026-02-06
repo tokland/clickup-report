@@ -20,7 +20,10 @@ interface TimeSummaryClickupRepositoryGetOptions extends DateRange {
 }
 
 export class TimeSummaryClickupRepository {
-    constructor(private api: ClickupApi, private userFilter: UserFilter) {}
+    constructor(
+        private api: ClickupApi,
+        private userFilter: UserFilter
+    ) {}
 
     get(dateRange: TimeSummaryClickupRepositoryGetOptions): FutureData<TimeSummary> {
         const data$ = this.getData(dateRange);
@@ -64,10 +67,14 @@ export class TimeSummaryClickupRepository {
     private getData(options: TimeSummaryClickupRepositoryGetOptions): FutureData<TimeEntriesInfo> {
         const { api, userFilter: config } = this;
         const { userEmail } = config;
+
         const team$ = api
             .getTeams()
-            .map(teams => teams.find(team => team.name === config.teamName))
-            .orError("Team not found");
+            .map(teams => {
+                console.debug(`Teams: ${teams.map(t => t.name).join(", ")}`);
+                return teams.find(team => team.name === config.teamName);
+            })
+            .orError(`Team not found: ${config.teamName}`);
 
         return team$.flatMap(team => {
             const timeEntries$ = api

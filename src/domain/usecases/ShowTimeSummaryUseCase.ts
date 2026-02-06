@@ -22,13 +22,6 @@ export class ShowTimeSummaryUseCase {
         const { dateRange, timeTasks } = timeSummary;
 
         return [
-            `Period: ${getStringDate(dateRange.start)} -> ${getStringDate(dateRange.end)}`,
-            `Time entries: ${timeTasks.length}`,
-            "---",
-            ...timeSummary.timeByFolder.map(({ folderName, duration: durationH }) => {
-                return `${folderName}: ${showDuration(durationH)}`;
-            }),
-            "---",
             ...timeTasks.map(task =>
                 [
                     task.date.toDateString(),
@@ -39,6 +32,15 @@ export class ShowTimeSummaryUseCase {
                     `https://app.clickup.com/t/${task.taskId}`,
                 ].join(" - ")
             ),
+
+            "---",
+
+            `Period: ${getStringDate(dateRange.start)} -> ${getStringDate(dateRange.end)}`,
+            `Time entries: ${timeTasks.length}`,
+            "---",
+            ...timeSummary.timeByFolder.map(({ folderName, duration: durationH }) => {
+                return `${folderName}: ${showDuration(durationH)}`;
+            }),
             `Total: ${showHumanDuration(timeSummary.total)}`,
         ].join("\n");
     }
