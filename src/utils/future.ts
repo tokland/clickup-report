@@ -8,6 +8,17 @@ export class Future<E, D> {
         return fluture.fork(onError)(onSuccess)(this.instance);
     }
 
+    tap(effectFn: (data: D) => void): Future<E, D> {
+        return this.map(data => {
+            effectFn(data);
+            return data;
+        });
+    }
+
+    chain<D2>(mapper: Future<E, D2>): Future<E, D2> {
+        return this.flatMap(() => mapper);
+    }
+
     map<D2>(mapper: (data: D) => D2): Future<E, D2> {
         const instance2 = fluture.map(mapper)(this.instance);
         return new Future(instance2);
@@ -74,6 +85,14 @@ export class Future<E, D> {
         return new Future(instance);
     }
 
+    static sequential<E, D>(futures: Array<Future<E, D>>): Future<E, Array<D>> {
+        return this.parallel(futures, { maxConcurrency: 1 });
+    }
+
+    toVoid(): Future<E, void> {
+        return this.map(() => undefined);
+    }
+
     static joinObj<FuturesObj extends Record<string, Future<any, any>>>(
         futuresObj: FuturesObj,
         options: { maxConcurrency?: number } = {}
@@ -109,3 +128,7 @@ type Fn<T> = { (value: T): void };
 export type Cancel = { (): void };
 
 export type Computation<E, D> = (resolve: Fn<D>, reject: Fn<E>) => fluture.Cancel;
+
+export function log(message: string): Future<Error, void> {
+    return Future.success<void, Error>(undefined).tap(() => console.debug(message));
+}

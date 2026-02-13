@@ -9,6 +9,7 @@ import {
     FutureData,
     GetTasksOptions,
     TaskId,
+    TaskToSave,
     UserId,
 } from "./ClickupApi.types";
 import { List, Space, SpaceId, Task, Team, TimeEntry } from "./ClickupApi.types";
@@ -40,17 +41,24 @@ export class ClickupApi {
         const { cache = true, params = {} } = options;
         const query = QueryString.stringify(params, { addQueryPrefix: true });
         const url = this.baseUrl + endpoint + query;
-        console.debug(`GET ${url}`);
 
-        const data$ = axiosRequest<DefaultError, T>(this.instance, defaultBuilder, {
+        return axiosRequest<DefaultError, T>(this.instance, defaultBuilder, {
             headers: { Authorization: this.options.token },
             method: "GET",
             url: url,
             cache: { ignoreCache: !cache },
         });
+    }
 
-        //return withMinTime(data$, minRequestTime);
-        return data$;
+    private post<T>(endpoint: string, data: object): FutureData<T> {
+        const url = this.baseUrl + endpoint;
+
+        return axiosRequest<DefaultError, T>(this.instance, defaultBuilder, {
+            headers: { Authorization: this.options.token },
+            method: "POST",
+            url: url,
+            data: data,
+        });
     }
 
     public getTeams(): FutureData<Team[]> {
@@ -76,6 +84,10 @@ export class ClickupApi {
 
     public getTask(options: { taskId: TaskId }): FutureData<Task> {
         return this.get<Task>(`/task/${options.taskId}`);
+    }
+
+    public saveTask(task: TaskToSave): FutureData<Task> {
+        return this.post<Task>(`/list/${task.list.id}/task`, task);
     }
 
     public getSpaces(options: { teamId: string }): FutureData<Space[]> {

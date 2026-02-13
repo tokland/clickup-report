@@ -1,3 +1,5 @@
+import { Future } from "../utils/future";
+
 export interface TimeSummary {
     dateRange: DateRange;
     total: number;
@@ -21,3 +23,5 @@ export interface DateRange {
     start: Date;
     end: Date;
 }
+
+export type Async<Data> = Future<Error, Data>;

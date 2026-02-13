@@ -5,7 +5,27 @@ import { parseDate } from "../date-utils";
 import { parseArgs } from "./arguments-parser";
 import { getValidatedJsonFile } from "./json";
 
+export function getBaseConfig() {
+    const configPath = path.join(__dirname, "../..", "config.json");
+    console.error("Using config file:", configPath);
+    const config = getValidatedJsonFile({
+        path: configPath,
+        codec: Codec.interface({
+            token: string,
+            teamName: string,
+            userEmail: string,
+        }),
+    });
+
+    const cacheDir = path.join(__dirname, "../..", "cache");
+    const api = new ClickupApi({ token: config.token, cacheDir });
+
+    return { api, config };
+}
+
 export function getConfig() {
+    const baseConfig = getBaseConfig();
+
     const args = parseArgs({
         description: "Show time report from ClickUp",
         options: {
@@ -28,19 +48,8 @@ export function getConfig() {
         },
     });
 
-    const configPath = path.join(__dirname, "../..", "config.json");
-    console.error("Using config file:", configPath);
-    const config = getValidatedJsonFile({
-        path: configPath,
-        codec: Codec.interface({
-            token: string,
-            teamName: string,
-            userEmail: string,
-        }),
-    });
+    const { api, config } = baseConfig;
 
-    const cacheDir = path.join(__dirname, "../..", "cache");
-    const api = new ClickupApi({ token: config.token, cacheDir });
     const startDate = parseDate(args.startDate);
     const endDate = args.endDate ? parseDate(args.endDate).endOf("day") : startDate.endOf("month");
 

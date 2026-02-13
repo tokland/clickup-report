@@ -45,7 +45,7 @@ export function axiosRequest<E, D>(
     });
 }
 
-export type DefaultError = string;
+export type DefaultError = Error;
 
 export type DefaultFutureData<Data> = Future<DefaultError, Data>;
 
@@ -54,8 +54,8 @@ export const defaultBuilder: AxiosBuilder<DefaultError> = {
         if (res.status >= 200 && res.status < 300) {
             return ["success", res.data];
         } else {
-            return ["error", `[${res.status}] ${JSON.stringify(res.data)}`];
+            return ["error", new Error(`[${res.status}] ${JSON.stringify(res.data)}`)];
         }
     },
-    mapNetworkError: (_req, message) => message,
+    mapNetworkError: (_req, message) => new Error(message),
 };

@@ -4,6 +4,7 @@ import { ClickupApi } from "./ClickupApi";
 import { FutureData, Task, TaskId, TimeEntry } from "./ClickupApi.types";
 import { TimeTask, DateRange, TimeSummary } from "../domain/entities";
 import { Future } from "../utils/future";
+import { TimeSummaryRepositoryGetOptions } from "../domain/repositories";
 
 interface TimeEntriesInfo {
     timeEntries: TimeEntry[];
@@ -15,24 +16,20 @@ export interface UserFilter {
     userEmail: string | undefined;
 }
 
-interface TimeSummaryClickupRepositoryGetOptions extends DateRange {
-    allUsers: boolean;
-}
-
 export class TimeSummaryClickupRepository {
     constructor(
         private api: ClickupApi,
         private userFilter: UserFilter
     ) {}
 
-    get(dateRange: TimeSummaryClickupRepositoryGetOptions): FutureData<TimeSummary> {
-        const data$ = this.getData(dateRange);
+    get(options: TimeSummaryRepositoryGetOptions): FutureData<TimeSummary> {
+        const data$ = this.getData(options);
         const timeTasks$ = data$.map(data => {
             const tasksById = _.keyBy(data.tasks, task => task.id);
             return data.timeEntries.map(timeEntry => this.getTimeTask(timeEntry, tasksById));
         });
 
-        return timeTasks$.map(timeTasks => this.getTimeSummary(_.compact(timeTasks), dateRange));
+        return timeTasks$.map(timeTasks => this.getTimeSummary(_.compact(timeTasks), options));
     }
 
     private getTimeTask(
@@ -55,7 +52,7 @@ export class TimeSummaryClickupRepository {
             username: timeEntry.user.username,
             taskId: task.id,
             taskName: task.name,
-            list: { name: task.list.name },
+            list: { name: task.list.name || "UNKNOWN" },
             projectName: [task.folder.name, task.list.name].join(" - "),
             date: new Date(parseInt(timeEntry.start)),
             duration: parseInt(timeEntry.duration) / 1000 / 3600,
@@ -64,7 +61,7 @@ export class TimeSummaryClickupRepository {
         };
     }
 
-    private getData(options: TimeSummaryClickupRepositoryGetOptions): FutureData<TimeEntriesInfo> {
+    private getData(options: TimeSummaryRepositoryGetOptions): FutureData<TimeEntriesInfo> {
         const { api, userFilter: config } = this;
         const { userEmail } = config;
 

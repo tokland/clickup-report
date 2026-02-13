@@ -75,28 +75,45 @@ export interface List {
 
 export type TaskId = string;
 
-export interface Task {
-    id: TaskId;
+type Reference = {
+    id: ListId;
+    name?: string;
+    hidden?: boolean;
+    access?: boolean;
+};
+
+type BaseTask = {
     name: string;
-    team_id: string;
-    url: string;
-    parent: TaskId;
-    list: {
-        id: ListId;
-        name: string;
-    };
-    project: {
+    text_content: string;
+    description: string;
+    list: Reference;
+    parent: TaskId | null;
+    custom_fields: Array<{
         id: string;
         name: string;
-    };
-    folder: {
-        id: FolderId;
-        name: string;
-    };
-    space: {
-        id: SpaceId;
-    };
-}
+        type: "short_text" | "text" | "signature" | "date";
+        value: string;
+        value_options?: unknown;
+        required: boolean;
+    }>;
+};
+
+export type TaskToSave = BaseTask & {
+    status: string;
+    assignees: Array<UserId>;
+};
+
+export type Task = BaseTask & {
+    id: TaskId;
+    url: string;
+    assignees: Array<{ id: UserId }>;
+    status: { id: string };
+    sharing: { public: boolean };
+    team_id: string;
+    project: Reference;
+    folder: Reference;
+    space: Reference;
+};
 
 export interface GetTasksOptions {
     listId: ListId;
