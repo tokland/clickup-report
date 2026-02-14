@@ -37,9 +37,16 @@ export class Day {
         return new Day(year, month, day);
     }
 
-    // Day.fromString("2024-01-15") => Day(2024, 1, 15)
-    static fromString(dateStr: string): Day {
-        const [yearS, monthS, dayS] = dateStr.split(/[-/]/);
+    // Day.fromString("2024-01-15", "YYYY-MM-DD") => Day(2024, 1, 15)
+    static fromString(dateStr: string, pattern: string): Day {
+        const yearS = pattern.includes("YYYY")
+            ? dateStr.substr(pattern.indexOf("YYYY"), 4)
+            : undefined;
+        const monthS = pattern.includes("MM")
+            ? dateStr.substr(pattern.indexOf("MM"), 2)
+            : undefined;
+        const dayS = pattern.includes("DD") ? dateStr.substr(pattern.indexOf("DD"), 2) : undefined;
+
         if (yearS === undefined || monthS === undefined || dayS === undefined) {
             throw new Error(`Invalid date string: ${dateStr}`);
         }
@@ -55,6 +62,15 @@ export class Day {
             throw new Error(`Invalid day of week: ${dayOfWeek}`);
         }
         return weekday;
+    }
+
+    equals(other: Day): boolean {
+        return this.year === other.year && this.month === other.month && this.day === other.day;
+    }
+
+    isBetween(startDay: Day, endDayInclusive: Day): boolean {
+        const date = this.toDate();
+        return date >= startDay.toDate() && date <= endDayInclusive.toDate();
     }
 
     // Day(2024, 1, 15).format("DD/MM/YYYY") => "15/01/2024"

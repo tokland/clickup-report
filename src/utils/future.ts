@@ -19,6 +19,10 @@ export class Future<E, D> {
         return this.flatMap(() => mapper);
     }
 
+    static void<E>(): Future<E, void> {
+        return Future.success<void, E>(undefined);
+    }
+
     map<D2>(mapper: (data: D) => D2): Future<E, D2> {
         const instance2 = fluture.map(mapper)(this.instance);
         return new Future(instance2);

@@ -1,4 +1,8 @@
+import _ from "lodash";
+import { Day } from "../domain/Day";
+import { Time } from "../domain/Time";
 import { WorkLog } from "../domain/WorkLog";
+import { Async } from "../domain/entities";
 import { WorkLogRepository } from "../domain/repositories";
 import { ClickupApi } from "./ClickupApi";
 import { FutureData, TaskToSave } from "./ClickupApi.types";
@@ -11,6 +15,33 @@ type ClickupReferences = {
 
 export class WorkLogClickupRepository implements WorkLogRepository {
     constructor(private api: ClickupApi, private references: ClickupReferences) {}
+
+    get(options: { from: Day; to: Day }): Async<WorkLog[]> {
+        // Not implemented yet, as we only need to save worklogs, not read them
+        return this.api.getTasks({ listId: this.references.listId }).map(tasks => {
+            return _(tasks)
+                .map(task => {
+                    const day = Day.fromString(task.name, "DD/MM/YYYY");
+                    if (!day.isBetween(options.from, options.to)) {
+                        return;
+                    }
+
+                    const getField = (pattern: string) =>
+                        task.custom_fields.find(field => field.name.includes(pattern))?.value || "";
+
+                    return WorkLog.create({
+                        day: Day.fromString(task.name, "DD/MM/YYYY"),
+                        userId: task.assignees[0]?.toString() || "",
+                        userLegalId: getField("NIF"),
+                        startTime: Time.fromString(getField("Hora Entrada 1")),
+                        endTime: Time.fromString(getField("Hora Salida 1")),
+                        signature: getField("Firma manual"),
+                    });
+                })
+                .compact()
+                .value();
+        });
+    }
 
     save(worklog: WorkLog): FutureData<WorklogResponse> {
         const { api } = this;
@@ -127,6 +158,8 @@ export class WorkLogClickupRepository implements WorkLogRepository {
             ],
         };
 
-        return api.saveTask(task).map(savedTask => ({ url: savedTask.url }));
+        return api.saveTask(task).map(savedTask => {
+            return { url: savedTask.url };
+        });
     }
 }

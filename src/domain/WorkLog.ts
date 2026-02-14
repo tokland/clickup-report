@@ -2,7 +2,7 @@ import { Day } from "./Day";
 import { Time } from "./Time";
 import { Struct } from "./Struct";
 
-type WorkLogAttrs = {
+export type WorkLogAttrs = {
     userId: string;
     day: Day;
     startTime: Time;

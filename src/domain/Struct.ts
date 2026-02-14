@@ -37,10 +37,6 @@ export function Struct<Attrs>() {
 
     return Base as {
         new (values: Attrs): Attrs & Base;
-        create: typeof Base["create"];
+        create: (typeof Base)["create"];
     };
 }
-
-const GenericStruct = Struct<unknown>();
-
-export type GenericStructInstance = InstanceType<typeof GenericStruct>;
