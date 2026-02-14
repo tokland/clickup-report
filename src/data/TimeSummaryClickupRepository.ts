@@ -17,10 +17,7 @@ export interface UserFilter {
 }
 
 export class TimeSummaryClickupRepository {
-    constructor(
-        private api: ClickupApi,
-        private userFilter: UserFilter
-    ) {}
+    constructor(private api: ClickupApi, private userFilter: UserFilter) {}
 
     get(options: TimeSummaryRepositoryGetOptions): FutureData<TimeSummary> {
         const data$ = this.getData(options);
@@ -71,7 +68,7 @@ export class TimeSummaryClickupRepository {
                 console.debug(`Teams: ${teams.map(t => t.name).join(", ")}`);
                 return teams.find(team => team.name === config.teamName);
             })
-            .orError(`Team not found: ${config.teamName}`);
+            .orError(new Error(`Team not found: ${config.teamName}`));
 
         return team$.flatMap(team => {
             const timeEntries$ = api
