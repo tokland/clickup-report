@@ -1,3 +1,6 @@
+/**
+ * Represents a calendar day with year, month, and day properties.
+ */
 export class Day {
     static weekDays: Weekday[] = [
         "Monday",
@@ -11,10 +14,11 @@ export class Day {
 
     private constructor(public year: number, public month: number, public day: number) {}
 
-    static range(start: Day, end: Day): Day[] {
+    // Day.range(Day(2024, 1, 1), Day(2024, 1, 3)) => [Day(2024, 1, 1), Day(2024, 1, 2), Day(2024, 1, 3)]
+    static range(startDay: Day, endDayInclusive: Day): Day[] {
         const days: Day[] = [];
-        let current = start;
-        while (current.toDate() <= end.toDate()) {
+        let current = startDay;
+        while (current.toDate() <= endDayInclusive.toDate()) {
             days.push(current);
             const nextDate = new Date(current.year, current.month - 1, current.day + 1);
             current = Day.fromDate(nextDate);
@@ -22,15 +26,18 @@ export class Day {
         return days;
     }
 
+    // Day.fromDate(new Date(2024, 0, 15)) => Day(2024, 1, 15)
     static fromDate(date: Date): Day {
         return new Day(date.getFullYear(), date.getMonth() + 1, date.getDate());
     }
 
+    // Day.from({ year: 2024, month: 1, day: 15 }) => Day(2024, 1, 15)
     static from(options: { year: number; month: number; day: number }): Day {
         const { year, month, day } = options;
         return new Day(year, month, day);
     }
 
+    // Day.fromString("2024-01-15") => Day(2024, 1, 15)
     static fromString(dateStr: string): Day {
         const [yearS, monthS, dayS] = dateStr.split(/[-/]/);
         if (yearS === undefined || monthS === undefined || dayS === undefined) {
@@ -39,6 +46,7 @@ export class Day {
         return new Day(parseInt(yearS), parseInt(monthS), parseInt(dayS));
     }
 
+    // Day(2024, 1, 15).weekday => "Tuesday"
     get weekday(): Weekday {
         const date = this.toDate();
         const dayOfWeek = date.getUTCDay(); // 0 (Sunday) to 6 (Saturday)
@@ -49,6 +57,7 @@ export class Day {
         return weekday;
     }
 
+    // Day(2024, 1, 15).format("DD/MM/YYYY") => "15/01/2024"
     format(pattern: string): string {
         const dayStr = this.day.toString().padStart(2, "0");
         const monthStr = this.month.toString().padStart(2, "0");
@@ -57,10 +66,12 @@ export class Day {
         return pattern.replace("DD", dayStr).replace("MM", monthStr).replace("YYYY", yearStr);
     }
 
+    // Day(2024, 1, 15).toDate() => new Date(2024, 0, 15)
     toDate(): Date {
         return new Date(this.msFromEpoch());
     }
 
+    // Day(2024, 1, 15).msFromEpoch() => 1705132800000
     msFromEpoch(): number {
         return Date.UTC(this.year, this.month - 1, this.day);
     }

@@ -10,7 +10,7 @@ import { command, option, string, flag, run } from "cmd-ts";
 function main(args: SaveWorkLogArgs) {
     const { api } = getBaseConfig();
     const timeSummaryRepository = new WorkLogClickupRepository(api, { listId: args.listId });
-    const [startDate, endDate] = getDateRangeFromString(args.date);
+    const [startDate, endDate] = getDateBoundariesFromString(args.date);
 
     const workLogs = Day.range(startDate, endDate).map(day => {
         return WorkLog.create({
@@ -33,9 +33,9 @@ function main(args: SaveWorkLogArgs) {
     );
 }
 
-// getDataRangeFromString("2024-06-01") -> [Day(2024, 06, 01), Day(2024, 06, 01)]
-// getDataRangeFromString("2024-06-01..2024-06-30") -> [Day(2024, 06, 01), Day(2024, 06, 30)]
-function getDateRangeFromString(s: string): [Day, Day] {
+// getDateBoundariesFromString("2024-06-01") -> [Day(2024, 06, 01), Day(2024, 06, 01)]
+// getDateBoundariesFromString("2024-06-01..2024-06-30") -> [Day(2024, 06, 01), Day(2024, 06, 30)]
+function getDateBoundariesFromString(s: string): [Day, Day] {
     const parts = s.split("..");
     const [part1, part2] = parts;
 
