@@ -18,7 +18,7 @@ export class WorkLogClickupRepository implements WorkLogRepository {
 
     get(options: { from: Day; to: Day }): Async<WorkLog[]> {
         // Not implemented yet, as we only need to save worklogs, not read them
-        return this.api.getTasks({ listId: this.references.listId }).map(tasks => {
+        return this.api.getTasks({ listId: this.references.listId, page: 0 }).map(tasks => {
             return _(tasks)
                 .map(task => {
                     const day = Day.fromString(task.name, "DD/MM/YYYY");

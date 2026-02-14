@@ -1,13 +1,13 @@
 import { Future } from "../utils/future";
 
-export interface TimeSummary {
+export type TimeSummary = {
     dateRange: DateRange;
     total: number;
     timeTasks: TimeTask[];
     timeByFolder: Array<{ folderName: string; duration: number }>;
-}
+};
 
-export interface TimeTask {
+export type TimeTask = {
     username: string;
     taskName: string;
     taskId: string;
@@ -17,11 +17,11 @@ export interface TimeTask {
     duration: number; // hours
     note: string;
     billable: boolean;
-}
+};
 
-export interface DateRange {
+export type DateRange = {
     start: Date;
     end: Date;
-}
+};
 
-export type Async<Data> = Future<Error, Data>;
+export type Async<Data> = Future<Data>;

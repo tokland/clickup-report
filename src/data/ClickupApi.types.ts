@@ -2,7 +2,7 @@ import { DefaultFutureData } from "./axios/future-axios";
 
 export type Endpoint = "/team" | `/team/${string}/time_entries`;
 
-export type ApiDate = string; // msecs from 1970
+export type ApiDate = string; // msecs from epoch (1970)
 export type DurationMs = string; // msecs
 
 type TeamId = string;
@@ -117,7 +117,7 @@ export type Task = BaseTask & {
 
 export interface GetTasksOptions {
     listId: ListId;
-    page?: number;
+    page?: number; // 0-based page number; if not provided, it will fetch all pages
 }
 
 export type { DefaultFutureData as FutureData };

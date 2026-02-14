@@ -6,15 +6,9 @@ export interface TimeSummaryRepository {
     get(dateRange: TimeSummaryRepositoryGetOptions): Async<TimeSummary>;
 }
 
-export type TimeSummaryRepositoryGetOptions = DateRange & {
-    allUsers: boolean;
-};
-
 export interface WorkLogRepository {
     get(options: { from: Day; to: Day }): Async<WorkLog[]>;
-    save(worklog: WorkLog): Async<WorklogResponse>;
+    save(worklog: WorkLog): Async<{ url: string }>;
 }
 
-type WorklogResponse = {
-    url: string;
-};
+export type TimeSummaryRepositoryGetOptions = DateRange & { allUsers: boolean };

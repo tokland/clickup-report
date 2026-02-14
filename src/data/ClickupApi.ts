@@ -13,13 +13,11 @@ import {
     UserId,
 } from "./ClickupApi.types";
 import { List, Space, SpaceId, Task, Team, TimeEntry } from "./ClickupApi.types";
-import { Future, wait } from "../utils/future";
-import { axiosRequest, defaultBuilder, DefaultError } from "./axios/future-axios";
+import { Future } from "../utils/future";
+import { axiosRequest, defaultBuilder } from "./axios/future-axios";
 import { FilesystemStore } from "./axios/FilesystemStore";
 import { AxiosInstance } from "axios";
 
-const maxRequestPerMinute = 100;
-const _minRequestTime = 60 / maxRequestPerMinute;
 const initialPage = 0;
 
 export class ClickupApi {
@@ -42,7 +40,7 @@ export class ClickupApi {
         const query = QueryString.stringify(params, { addQueryPrefix: true });
         const url = this.baseUrl + endpoint + query;
 
-        return axiosRequest<DefaultError, T>(this.instance, defaultBuilder, {
+        return axiosRequest<T>(this.instance, defaultBuilder, {
             headers: { Authorization: this.options.token },
             method: "GET",
             url: url,
@@ -53,7 +51,7 @@ export class ClickupApi {
     private post<T>(endpoint: string, data: object): FutureData<T> {
         const url = this.baseUrl + endpoint;
 
-        return axiosRequest<DefaultError, T>(this.instance, defaultBuilder, {
+        return axiosRequest<T>(this.instance, defaultBuilder, {
             headers: { Authorization: this.options.token },
             method: "POST",
             url: url,
@@ -114,7 +112,9 @@ export class ClickupApi {
         return this.get<{ tasks: Task[] }>(url)
             .map(res => res.tasks)
             .flatMap(tasks =>
-                tasks.length >= 100 ? this.getNextPageTasks(tasks, options) : Future.success(tasks)
+                tasks.length >= 100 && options.page === undefined
+                    ? this.getNextPageTasks(tasks, options)
+                    : Future.success(tasks)
             );
     }
 
@@ -129,11 +129,4 @@ export class ClickupApi {
 
 function getApiDate(date: Date): ApiDate {
     return date.getTime().toString();
-}
-
-export function withMinTime<Error, Data>(
-    data$: Future<Error, Data>,
-    minTime: number
-): Future<Error, Data> {
-    return Future.join2(data$, wait(minTime)).map(([data]) => data);
 }

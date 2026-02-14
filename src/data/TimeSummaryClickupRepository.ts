@@ -1,7 +1,7 @@
 import _ from "lodash";
 
 import { ClickupApi } from "./ClickupApi";
-import { FutureData, Task, TaskId, TimeEntry } from "./ClickupApi.types";
+import { FutureData, Task, TaskId, Team, TimeEntry } from "./ClickupApi.types";
 import { TimeTask, DateRange, TimeSummary } from "../domain/entities";
 import { Future } from "../utils/future";
 import { TimeSummaryRepositoryGetOptions } from "../domain/repositories";
@@ -68,7 +68,12 @@ export class TimeSummaryClickupRepository {
                 console.debug(`Teams: ${teams.map(t => t.name).join(", ")}`);
                 return teams.find(team => team.name === config.teamName);
             })
-            .orError(new Error(`Team not found: ${config.teamName}`));
+            .flatMap(
+                (team): Future<Team> =>
+                    team
+                        ? Future.success(team)
+                        : Future.error(new Error(`Team not found: ${config.teamName}`))
+            );
 
         return team$.flatMap(team => {
             const timeEntries$ = api
@@ -93,7 +98,7 @@ export class TimeSummaryClickupRepository {
                     .map(task => api.getTask({ taskId: task.id }))
                     .value();
 
-                return Future.parallel(tasks$, { maxConcurrency: 1 }).map(tasks => {
+                return Future.parallel(tasks$, { concurrency: 1 }).map(tasks => {
                     return { timeEntries, tasks };
                 });
             });

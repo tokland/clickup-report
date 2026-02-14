@@ -2,15 +2,7 @@
  * Represents a calendar day with year, month, and day properties.
  */
 export class Day {
-    static weekDays: Weekday[] = [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday",
-    ];
+    static weekDays: Weekday[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
     private constructor(public year: number, public month: number, public day: number) {}
 
@@ -20,10 +12,16 @@ export class Day {
         let current = startDay;
         while (current.toDate() <= endDayInclusive.toDate()) {
             days.push(current);
-            const nextDate = new Date(current.year, current.month - 1, current.day + 1);
-            current = Day.fromDate(nextDate);
+            current = current.addDays(1);
         }
         return days;
+    }
+
+    // Day(2024, 1, 15).addDays(5) => Day(2024, 1, 20)
+    addDays(days: number): Day {
+        const date = this.toDate();
+        date.setDate(date.getDate() + days);
+        return Day.fromDate(date);
     }
 
     // Day.fromDate(new Date(2024, 0, 15)) => Day(2024, 1, 15)
@@ -64,13 +62,20 @@ export class Day {
         return weekday;
     }
 
+    // Day(2024, 1, 15).equals(Day(2024, 1, 15)) => true
     equals(other: Day): boolean {
         return this.year === other.year && this.month === other.month && this.day === other.day;
     }
 
+    // Day(2024, 1, 15).isBetween(Day(2024, 1, 1), Day(2024, 1, 31)) => true
     isBetween(startDay: Day, endDayInclusive: Day): boolean {
         const date = this.toDate();
         return date >= startDay.toDate() && date <= endDayInclusive.toDate();
+    }
+
+    // Day(2024, 1, 15).isWorkingDay() => true (if it's not Saturday or Sunday)
+    isWorkingDay(): boolean {
+        return this.weekday !== "Sat" && this.weekday !== "Sun";
     }
 
     // Day(2024, 1, 15).format("DD/MM/YYYY") => "15/01/2024"
@@ -80,6 +85,11 @@ export class Day {
         const yearStr = this.year.toString();
 
         return pattern.replace("DD", dayStr).replace("MM", monthStr).replace("YYYY", yearStr);
+    }
+
+    // Day(2024, 1, 15).asString() => "2024-01-15"
+    asString(): string {
+        return this.format("YYYY-MM-DD");
     }
 
     // Day(2024, 1, 15).toDate() => new Date(2024, 0, 15)
@@ -93,4 +103,4 @@ export class Day {
     }
 }
 
-type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+type Weekday = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";

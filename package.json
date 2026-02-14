@@ -12,6 +12,7 @@
         "luxon": "^1.26.0",
         "purify-ts": "^0.16.1",
         "qs": "^6.10.1",
+        "real-cancellable-promise": "^1.2.3",
         "sanitize-filename": "^1.6.3",
         "typescript": "^5.9.3"
     },

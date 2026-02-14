@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "es5",
+        "target": "es2022",
         "lib": ["dom", "dom.iterable", "esnext"],
         "allowJs": false,
         "skipLibCheck": true,
@@ -18,6 +18,5 @@
         "noImplicitAny": true,
         "noUncheckedIndexedAccess": true
     },
-    "include": ["src"],
-    "exclude": ["node_modules", "dist", "build"]
+    "include": ["src"]
 }

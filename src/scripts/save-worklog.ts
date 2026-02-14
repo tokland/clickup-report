@@ -1,7 +1,7 @@
 import { WorkLogClickupRepository } from "../data/WorkLogClickupRepository";
 import { Day } from "../domain/Day";
 import { Time } from "../domain/Time";
-import { SaveWorklogUseCase, WorkLogCommand } from "../domain/usecases/SaveWorklogUseCase";
+import { SaveWorklogUseCase, SaveWorkLogCommand } from "../domain/usecases/SaveWorklogUseCase";
 import { getBaseConfig } from "./common";
 
 import { command, option, flag, run } from "cmd-ts";
@@ -11,7 +11,7 @@ function main(args: SaveWorkLogArgs): void {
     const timeSummaryRepository = new WorkLogClickupRepository(api, { listId: args.listId });
     const [startDate, endDate] = getDateRange(args.date, "YYYY-MM-DD");
 
-    const command: WorkLogCommand = {
+    const command: SaveWorkLogCommand = {
         worklog: {
             startTime: Time.fromString(args.startTime),
             endTime: Time.fromString(args.endTime),
