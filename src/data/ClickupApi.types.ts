@@ -117,7 +117,10 @@ export type Task = BaseTask & {
 
 export interface GetTasksOptions {
     listId: ListId;
-    page?: number; // 0-based page number; if not provided, it will fetch all pages
+    page:
+        | { type: "single"; number: number } // 1-based page number
+        | { type: "all" };
+    allPages?: boolean;
 }
 
 export type { DefaultFutureData as FutureData };

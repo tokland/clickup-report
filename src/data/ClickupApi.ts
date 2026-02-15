@@ -1,6 +1,7 @@
 import _ from "lodash";
 import QueryString from "qs";
 import axiosCacheAdapter from "axios-cache-adapter";
+import { AxiosInstance } from "axios";
 
 import {
     ApiDate,
@@ -8,6 +9,7 @@ import {
     FolderId,
     FutureData,
     GetTasksOptions,
+    ListId,
     TaskId,
     TaskToSave,
     UserId,
@@ -16,7 +18,7 @@ import { List, Space, SpaceId, Task, Team, TimeEntry } from "./ClickupApi.types"
 import { Future } from "../utils/future";
 import { axiosRequest, defaultBuilder } from "./axios/future-axios";
 import { FilesystemStore } from "./axios/FilesystemStore";
-import { AxiosInstance } from "axios";
+import assert from "assert";
 
 const initialPage = 0;
 
@@ -106,24 +108,35 @@ export class ClickupApi {
     }
 
     public getTasks(options: GetTasksOptions): FutureData<Task[]> {
-        const page = options.page || initialPage;
-        const url = `/list/${options.listId}/task?include_closed=true&subtasks=true&page=${page}`;
+        const { listId, page } = options;
 
-        return this.get<{ tasks: Task[] }>(url)
-            .map(res => res.tasks)
-            .flatMap(tasks =>
-                tasks.length >= 100 && options.page === undefined
-                    ? this.getNextPageTasks(tasks, options)
-                    : Future.success(tasks)
-            );
+        switch (page.type) {
+            case "single":
+                assert(page.number > 0, "Page number must be greater than 0");
+                return this.getTasksForPage({ listId, page: page.number - 1 });
+            case "all":
+                return Future.block(async $ => {
+                    const tasks: Task[] = [];
+                    let currentPage = initialPage;
+
+                    while (true) {
+                        const pageTasks = await $(
+                            this.getTasksForPage({ listId, page: currentPage })
+                        );
+                        tasks.push(...pageTasks);
+                        if (pageTasks.length < 100) break;
+                        currentPage++;
+                    }
+
+                    return tasks;
+                });
+        }
     }
 
-    private getNextPageTasks(tasks: Task[], options: GetTasksOptions): FutureData<Task[]> {
-        const prevPage = options.page || initialPage;
-
-        return this.getTasks({ ...options, page: prevPage + 1 }).map(nextPageTasks =>
-            _.concat(tasks, nextPageTasks)
-        );
+    private getTasksForPage(options: { listId: ListId; page: number }): FutureData<Task[]> {
+        const page = options.page;
+        const url = `/list/${options.listId}/task?include_closed=true&subtasks=true&page=${page}`;
+        return this.get<{ tasks: Task[] }>(url).map(res => res.tasks);
     }
 }
 

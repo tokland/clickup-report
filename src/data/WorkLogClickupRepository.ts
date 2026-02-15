@@ -18,29 +18,33 @@ export class WorkLogClickupRepository implements WorkLogRepository {
 
     get(options: { from: Day; to: Day }): Async<WorkLog[]> {
         // Not implemented yet, as we only need to save worklogs, not read them
-        return this.api.getTasks({ listId: this.references.listId, page: 0 }).map(tasks => {
-            return _(tasks)
-                .map(task => {
-                    const day = Day.fromString(task.name, "DD/MM/YYYY");
-                    if (!day.isBetween(options.from, options.to)) {
-                        return;
-                    }
+        return this.api
+            .getTasks({ listId: this.references.listId, page: { type: "single", number: 1 } })
+            .map(tasks => {
+                return _(tasks)
+                    .map(task => {
+                        const day = Day.fromString(task.name, "DD/MM/YYYY");
 
-                    const getField = (pattern: string) =>
-                        task.custom_fields.find(field => field.name.includes(pattern))?.value || "";
+                        if (!day.isBetween(options.from, options.to)) {
+                            return;
+                        }
 
-                    return WorkLog.create({
-                        day: Day.fromString(task.name, "DD/MM/YYYY"),
-                        userId: task.assignees[0]?.toString() || "",
-                        userLegalId: getField("NIF"),
-                        startTime: Time.fromString(getField("Hora Entrada 1")),
-                        endTime: Time.fromString(getField("Hora Salida 1")),
-                        signature: getField("Firma manual"),
-                    });
-                })
-                .compact()
-                .value();
-        });
+                        const getField = (pattern: string) =>
+                            task.custom_fields.find(field => field.name.includes(pattern))?.value ||
+                            "";
+
+                        return WorkLog.create({
+                            day: Day.fromString(task.name, "DD/MM/YYYY"),
+                            userId: task.assignees[0]?.toString() || "",
+                            userLegalId: getField("NIF"),
+                            startTime: Time.fromString(getField("Hora Entrada 1")),
+                            endTime: Time.fromString(getField("Hora Salida 1")),
+                            signature: getField("Firma manual"),
+                        });
+                    })
+                    .compact()
+                    .value();
+            });
     }
 
     save(worklog: WorkLog): FutureData<WorklogResponse> {
