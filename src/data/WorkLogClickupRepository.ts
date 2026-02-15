@@ -7,8 +7,6 @@ import { WorkLogRepository } from "../domain/repositories";
 import { ClickupApi } from "./ClickupApi";
 import { FutureData, TaskToSave } from "./ClickupApi.types";
 
-type WorklogResponse = { url: string };
-
 type ClickupReferences = {
     listId: string;
 };
@@ -17,7 +15,6 @@ export class WorkLogClickupRepository implements WorkLogRepository {
     constructor(private api: ClickupApi, private references: ClickupReferences) {}
 
     get(options: { from: Day; to: Day }): Async<WorkLog[]> {
-        // Not implemented yet, as we only need to save worklogs, not read them
         return this.api
             .getTasks({ listId: this.references.listId, page: { type: "single", number: 1 } })
             .map(tasks => {
@@ -47,10 +44,7 @@ export class WorkLogClickupRepository implements WorkLogRepository {
             });
     }
 
-    save(worklog: WorkLog): FutureData<WorklogResponse> {
-        const { api } = this;
-        const totalHours = worklog.totalHours;
-
+    save(worklog: WorkLog): FutureData<{ url: string }> {
         const task: TaskToSave = {
             name: worklog.day.format("DD/MM/YYYY"),
             text_content: "",
@@ -127,7 +121,7 @@ export class WorkLogClickupRepository implements WorkLogRepository {
                     id: "52e8fac3-b2ef-4094-b7c2-392698ad9b24",
                     name: "10.- Total Ordinarias (HH:MM)",
                     type: "short_text",
-                    value: totalHours.asString(),
+                    value: worklog.totalHours.asString(),
                     required: true,
                 },
                 {
@@ -162,7 +156,7 @@ export class WorkLogClickupRepository implements WorkLogRepository {
             ],
         };
 
-        return api.saveTask(task).map(savedTask => {
+        return this.api.saveTask(task).map(savedTask => {
             return { url: savedTask.url };
         });
     }
