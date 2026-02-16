@@ -1,6 +1,7 @@
 ## Setup
 
-```
+```shell
+$ nvm use
 $ yarn install
 $ cp config-template.json config.json
 ```
@@ -11,12 +12,12 @@ And modify `config.json` with your particular configuration.
 
 Get a summary report for a month (default interval):
 
-```
-$ yarn get-report -d 2021-03
+```shell
+$ yarn run-script src/scripts/get-report.ts -d 2026-01
 ```
 
-Get a summary report for a specific interval:
+Create worklogs for some interval of days (Saturday and Sunday will be automatically excluded):
 
-```
-$ yarn get-report -d 2021-01-01 -e 2021-03-15
+```shell
+$ yarn run-script src/scripts/save-worklog.ts --start-time 09:00 --end-time 13:30 --signature="Arnau Sanchez" --user-legal-id="12345678N" --user-id 6813404 --list-id 901215049998 --date 2026-02-14..2026-02-16 --dry-run
 ```

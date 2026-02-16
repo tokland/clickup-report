@@ -26,11 +26,10 @@
         "@typescript-eslint/parser": "^8.55.0",
         "cmd-ts": "^0.15.0",
         "eslint": "^8.57.0",
-        "ts-node": "^9.1.1",
         "tsx": "^4.21.0"
     },
     "scripts": {
         "lint": "eslint 'src/**/*.{js,ts,tsx}' --fix",
-        "get-report": "ts-node src/scripts/clickup-report.ts"
+        "run-script": "tsx"
     }
 }
