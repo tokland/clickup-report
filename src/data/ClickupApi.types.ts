@@ -2,7 +2,7 @@ import { DefaultFutureData } from "./axios/future-axios";
 
 export type Endpoint = "/team" | `/team/${string}/time_entries`;
 
-export type ApiDate = string; // msecs from 1970
+export type ApiDate = string; // msecs from epoch (1970)
 export type DurationMs = string; // msecs
 
 type TeamId = string;
@@ -40,7 +40,7 @@ export interface TimeEntry {
     tags: [];
     source: "clickup";
     at: ApiDate;
-    task: string | { id: TaskId; name: string }; // "0" when no task assigned
+    task: string | { id: TaskId; name: string } | undefined; // "0" when no task assigned
     user: {
         id: UserId;
         username: string;
@@ -75,32 +75,52 @@ export interface List {
 
 export type TaskId = string;
 
-export interface Task {
-    id: TaskId;
+type Reference = {
+    id: ListId;
+    name?: string;
+    hidden?: boolean;
+    access?: boolean;
+};
+
+type BaseTask = {
     name: string;
-    team_id: string;
-    url: string;
-    parent: TaskId;
-    list: {
-        id: ListId;
-        name: string;
-    };
-    project: {
+    text_content: string;
+    description: string;
+    list: Reference;
+    parent: TaskId | null;
+    custom_fields: Array<{
         id: string;
         name: string;
-    };
-    folder: {
-        id: FolderId;
-        name: string;
-    };
-    space: {
-        id: SpaceId;
-    };
-}
+        type: "short_text" | "text" | "signature" | "date";
+        value: string;
+        value_options?: unknown;
+        required: boolean;
+    }>;
+};
+
+export type TaskToSave = BaseTask & {
+    status: string;
+    assignees: Array<UserId>;
+};
+
+export type Task = BaseTask & {
+    id: TaskId;
+    url: string;
+    assignees: Array<{ id: UserId }>;
+    status: { id: string };
+    sharing: { public: boolean };
+    team_id: string;
+    project: Reference;
+    folder: Reference;
+    space: Reference;
+};
 
 export interface GetTasksOptions {
     listId: ListId;
-    page?: number;
+    page:
+        | { type: "single"; number: number } // 1-based page number
+        | { type: "all" };
+    allPages?: boolean;
 }
 
 export type { DefaultFutureData as FutureData };
