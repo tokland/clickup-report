@@ -1,111 +1,145 @@
-import * as fluture from "fluture";
-import _ from "lodash";
+import {
+    buildCancellablePromise,
+    CancellablePromise,
+    Cancellation,
+} from "real-cancellable-promise";
 
-export class Future<E, D> {
-    private constructor(private instance: fluture.FutureInstance<E, D>) {}
+type ParallelOptions = { concurrency: number };
 
-    run(onSuccess: Fn<D>, onError: Fn<E>): Cancel {
-        return fluture.fork(onError)(onSuccess)(this.instance);
+export type Cancel = (() => void) | undefined;
+
+interface CaptureAsync {
+    <T>(async: Future<T>): Promise<T>;
+    error: <T>(error: Error) => Promise<T>;
+}
+
+export class Future<T> {
+    private constructor(private _promise: () => CancellablePromise<T>) {}
+
+    static success<T>(data: T): Future<T> {
+        return new Future(() => CancellablePromise.resolve(data));
     }
 
-    map<D2>(mapper: (data: D) => D2): Future<E, D2> {
-        const instance2 = fluture.map(mapper)(this.instance);
-        return new Future(instance2);
+    static error<T>(error: Error): Future<T> {
+        return new Future(() => CancellablePromise.reject(error));
     }
 
-    bimap<E2, D2>(dataMapper: (data: D) => D2, errorMapper: (error: E) => E2): Future<E2, D2> {
-        const instance2 = fluture.bimap(errorMapper)(dataMapper)(this.instance);
-        return new Future(instance2);
+    static fromComputation<T>(
+        computation: (resolve: (value: T) => void, reject: (error: Error) => void) => Cancel
+    ): Future<T> {
+        let cancel: Cancel = () => {};
+
+        return new Future(() => {
+            const promise = new Promise<T>((resolve, reject) => {
+                cancel = computation(resolve, reject);
+            });
+
+            return new CancellablePromise(promise, cancel || (() => {}));
+        });
     }
 
-    flatMap<D2>(mapper: (data: D) => Future<E, D2>): Future<E, D2> {
-        const chainMapper = fluture.chain<E, D, D2>(data => mapper(data).instance);
-        return new Future(chainMapper(this.instance));
+    run(onSuccess: (data: T) => void, onError: (error: Error) => void): Cancel {
+        return this._promise().then(onSuccess, err => {
+            if (err instanceof Cancellation) {
+                // no-op
+            } else if (err instanceof Error) {
+                onError(err);
+            } else {
+                onError(new Error("Unknown error"));
+            }
+        }).cancel;
     }
 
-    flatMapError<E2>(mapper: (error: E) => Future<E2, D>): Future<E2, D> {
-        const chainRejMapper = fluture.chainRej<E, E2, D>(error => mapper(error).instance);
-        return new Future(chainRejMapper(this.instance));
+    map<U>(fn: (data: T) => U): Future<U> {
+        return new Future(() => this._promise().then(fn));
     }
 
-    orError(error: E): Future<E, Exclude<D, undefined>> {
-        return this.flatMap(value =>
-            value === undefined
-                ? Future.error(error)
-                : Future.success(value as Exclude<D, undefined>)
+    flatMap<U>(fn: (data: T) => Future<U>): Future<U> {
+        return new Future(() => this._promise().then(data => fn(data)._promise()));
+    }
+
+    chain<U>(fn: (data: T) => Future<U>): Future<U> {
+        return this.flatMap(fn);
+    }
+
+    toPromise(): Promise<T> {
+        return this._promise();
+    }
+
+    toVoid(): Future<void> {
+        return this.map(() => undefined);
+    }
+
+    static join2<T, S>(async1: Future<T>, async2: Future<S>): Future<[T, S]> {
+        return new Future(() => {
+            return CancellablePromise.all<T, S>([async1._promise(), async2._promise()]);
+        });
+    }
+
+    static joinObj<Obj extends Record<string, Future<any>>>(
+        obj: Obj,
+        options: ParallelOptions = { concurrency: 1 }
+    ): Future<{ [K in keyof Obj]: Obj[K] extends Future<infer U> ? U : never }> {
+        const asyncs = Object.values(obj);
+
+        return Future.parallel(asyncs, options).map(values => {
+            const keys = Object.keys(obj);
+            const pairs = keys.map((key, idx) => [key, values[idx]]);
+            return Object.fromEntries(pairs);
+        });
+    }
+
+    static sequential<T>(asyncs: Future<T>[]): Future<T[]> {
+        return Future.block(async $ => {
+            const output: T[] = [];
+            for (const async of asyncs) output.push(await $(async));
+            return output;
+        });
+    }
+
+    static parallel<T>(asyncs: Future<T>[], options: ParallelOptions): Future<T[]> {
+        return new Future(() =>
+            buildCancellablePromise(async $ => {
+                const queue: CancellablePromise<void>[] = [];
+                const output: T[] = new Array(asyncs.length);
+
+                for (const [idx, async] of asyncs.entries()) {
+                    const queueItem$ = async._promise().then(res => {
+                        queue.splice(queue.indexOf(queueItem$), 1);
+                        output[idx] = res;
+                    });
+
+                    queue.push(queueItem$);
+
+                    if (queue.length >= options.concurrency)
+                        await $(CancellablePromise.race(queue));
+                }
+
+                await $(CancellablePromise.all(queue));
+                return output;
+            })
         );
     }
 
-    toPromise(errorMapper: (err: E) => Error): Promise<D> {
-        const futureMapped = fluture.mapRej(errorMapper)(this.instance);
-        return fluture.promise(futureMapped);
+    static sleep(ms: number): Future<number> {
+        return new Future(() => CancellablePromise.delay(ms)).map(() => ms);
     }
 
-    cache(): Future<E, D> {
-        return new Future(fluture.cache(this.instance));
+    static void(): Future<void> {
+        return Future.success(undefined);
     }
 
-    /* Static methods */
+    static block<U>(blockFn: (captureAsync: CaptureAsync) => Promise<U>): Future<U> {
+        return new Future((): CancellablePromise<U> => {
+            return buildCancellablePromise(capturePromise => {
+                const captureAsync: CaptureAsync = async => capturePromise(async._promise());
 
-    static fromComputation<E, D>(computation: Computation<E, D>): Future<E, D> {
-        return new Future(fluture.Future((reject, resolve) => computation(resolve, reject)));
-    }
+                captureAsync.error = function <T>(err: Error) {
+                    return capturePromise(CancellablePromise.reject(err)) as Promise<T>;
+                };
 
-    static success<D, E = unknown>(data: D): Future<E, D> {
-        return new Future<E, D>(fluture.resolve(data));
-    }
-
-    static error<E, D = unknown>(error: E): Future<E, D> {
-        return new Future<E, D>(fluture.reject(error));
-    }
-
-    static join2<E, D1, D2>(future1: Future<E, D1>, future2: Future<E, D2>): Future<E, [D1, D2]> {
-        const instance = fluture.both(future1.instance)(future2.instance);
-        return new Future(instance);
-    }
-
-    static parallel<E, D>(
-        futures: Array<Future<E, D>>,
-        options: { maxConcurrency?: number } = {}
-    ): Future<E, Array<D>> {
-        const { maxConcurrency = 5 } = options;
-        const parallel = fluture.parallel(maxConcurrency);
-        const instance = parallel(futures.map(future => future.instance));
-        return new Future(instance);
-    }
-
-    static joinObj<FuturesObj extends Record<string, Future<any, any>>>(
-        futuresObj: FuturesObj,
-        options: { maxConcurrency?: number } = {}
-    ): JoinObj<FuturesObj> {
-        const { maxConcurrency = 10 } = options;
-        const parallel = fluture.parallel(maxConcurrency);
-        const keys = _.keys(futuresObj);
-        const futures = _.values(futuresObj);
-        const flutures = parallel(futures.map(future => future.instance));
-        const futureObj = new Future(flutures).map(values => _.zipObject(keys, values));
-        return futureObj as JoinObj<FuturesObj>;
+                return blockFn(captureAsync);
+            });
+        });
     }
 }
-
-export function wait(seconds: number): Future<never, void> {
-    return Future.fromComputation((resolve, _reject) => {
-        const id = setTimeout(resolve, seconds * 1000);
-        return () => clearTimeout(id);
-    });
-}
-
-type JoinObj<Futures extends Record<string, Future<any, any>>> = Future<
-    ExtractFutureError<Futures[keyof Futures]>,
-    { [K in keyof Futures]: ExtractFutureData<Futures[K]> }
->;
-
-type ExtractFutureData<F> = F extends Future<any, infer D> ? D : never;
-
-type ExtractFutureError<F> = F extends Future<infer E, any> ? E : never;
-
-type Fn<T> = { (value: T): void };
-
-export type Cancel = { (): void };
-
-export type Computation<E, D> = (resolve: Fn<D>, reject: Fn<E>) => fluture.Cancel;

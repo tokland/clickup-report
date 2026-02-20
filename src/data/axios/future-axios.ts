@@ -3,17 +3,17 @@ import { Future } from "../../utils/future";
 
 type AxiosRequest = AxiosRequestConfig;
 
-export interface AxiosBuilder<E, D = unknown> {
-    mapResponse(response: AxiosResponse<unknown>): ["success", D] | ["error", E];
-    mapNetworkError: (request: AxiosRequestConfig, message: string) => E;
+export interface AxiosBuilder<D = unknown> {
+    mapResponse(response: AxiosResponse<unknown>): ["success", D] | ["error", Error];
+    mapNetworkError: (request: AxiosRequestConfig, error: Error) => Error;
 }
 
-export function axiosRequest<E, D>(
+export function axiosRequest<D>(
     instance: AxiosInstance,
-    builder: AxiosBuilder<E>,
+    builder: AxiosBuilder,
     request: AxiosRequest
-): Future<E, D> {
-    return Future.fromComputation<E, D>((resolve, reject) => {
+): Future<D> {
+    return Future.fromComputation<D>((resolve, reject) => {
         const source = axios.CancelToken.source();
 
         const fullRequest: AxiosRequest = {
@@ -45,17 +45,17 @@ export function axiosRequest<E, D>(
     });
 }
 
-export type DefaultError = string;
+export type DefaultError = Error;
 
-export type DefaultFutureData<Data> = Future<DefaultError, Data>;
+export type DefaultFutureData<Data> = Future<Data>;
 
-export const defaultBuilder: AxiosBuilder<DefaultError> = {
+export const defaultBuilder: AxiosBuilder = {
     mapResponse: res => {
         if (res.status >= 200 && res.status < 300) {
             return ["success", res.data];
         } else {
-            return ["error", `[${res.status}] ${JSON.stringify(res.data)}`];
+            return ["error", new Error(`[${res.status}] ${JSON.stringify(res.data)}`)];
         }
     },
-    mapNetworkError: (_req, message) => message,
+    mapNetworkError: (_req, error) => new Error(`[Network Error] ${error.message}`),
 };

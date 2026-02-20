@@ -7,7 +7,10 @@ export class ShowTimeSummaryUseCase {
 
     execute(options: { dateRange: DateRange }): void {
         const { dateRange } = options;
-        const timeSummary$ = this.timeSummaryClickupRepository.get(dateRange);
+        const timeSummary$ = this.timeSummaryClickupRepository.get({
+            ...dateRange,
+            allUsers: false,
+        });
 
         timeSummary$.run(timeSummary => {
             const summaryReportString = this.timeSummaryToString(timeSummary);
@@ -19,18 +22,40 @@ export class ShowTimeSummaryUseCase {
         const { dateRange, timeTasks } = timeSummary;
 
         return [
+            ...timeTasks.map(task =>
+                [
+                    task.date.toDateString(),
+                    task.projectName,
+                    showHumanDuration(task.duration),
+                    task.taskName,
+                    task.note,
+                    `https://app.clickup.com/t/${task.taskId}`,
+                ].join(" - ")
+            ),
+
+            "---",
+
             `Period: ${getStringDate(dateRange.start)} -> ${getStringDate(dateRange.end)}`,
             `Time entries: ${timeTasks.length}`,
-            `Total: ${showDuration(timeSummary.total)}`,
             "---",
             ...timeSummary.timeByFolder.map(({ folderName, duration: durationH }) => {
                 return `${folderName}: ${showDuration(durationH)}`;
             }),
+            `Total: ${showHumanDuration(timeSummary.total)}`,
         ].join("\n");
     }
 }
 
-export function showDuration(duration: number): string {
-    const s = duration.toFixed(2);
+export function showDuration(hours: number): string {
+    const s = hours.toFixed(2);
     return `${s}h`;
+}
+
+export function showHumanDuration(hours: number): string {
+    const hoursInt = Math.floor(hours);
+    const decimal = hours % 1;
+    const m = Math.round(decimal * 60)
+        .toString()
+        .padStart(2, "0");
+    return `${hoursInt}h${m}m`;
 }

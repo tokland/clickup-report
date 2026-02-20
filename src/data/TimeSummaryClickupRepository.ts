@@ -1,9 +1,10 @@
 import _ from "lodash";
 
 import { ClickupApi } from "./ClickupApi";
-import { FutureData, Task, TaskId, TimeEntry } from "./ClickupApi.types";
+import { FutureData, Task, TaskId, Team, TimeEntry } from "./ClickupApi.types";
 import { TimeTask, DateRange, TimeSummary } from "../domain/entities";
 import { Future } from "../utils/future";
+import { TimeSummaryRepositoryGetOptions } from "../domain/repositories";
 
 interface TimeEntriesInfo {
     timeEntries: TimeEntry[];
@@ -12,54 +13,83 @@ interface TimeEntriesInfo {
 
 export interface UserFilter {
     teamName: string;
-    userEmail: string;
+    userEmail: string | undefined;
 }
 
 export class TimeSummaryClickupRepository {
     constructor(private api: ClickupApi, private userFilter: UserFilter) {}
 
-    get(dateRange: DateRange): FutureData<TimeSummary> {
-        const data$ = this.getData(dateRange);
+    get(options: TimeSummaryRepositoryGetOptions): FutureData<TimeSummary> {
+        const data$ = this.getData(options);
         const timeTasks$ = data$.map(data => {
             const tasksById = _.keyBy(data.tasks, task => task.id);
             return data.timeEntries.map(timeEntry => this.getTimeTask(timeEntry, tasksById));
         });
 
-        return timeTasks$.map(timeTasks => this.getTimeSummary(timeTasks, dateRange));
+        return timeTasks$.map(timeTasks => this.getTimeSummary(_.compact(timeTasks), options));
     }
 
-    private getTimeTask(timeEntry: TimeEntry, tasksById: Record<TaskId, Task>): TimeTask {
+    private getTimeTask(
+        timeEntry: TimeEntry,
+        tasksById: Record<TaskId, Task>
+    ): TimeTask | undefined {
         const timeEntryJson = JSON.stringify(timeEntry, null, 4);
-        if (typeof timeEntry.task === "string") throw new Error(`No task for: ${timeEntryJson}`);
-
+        if (typeof timeEntry.task === "string" || !timeEntry.task) {
+            console.error(`No task for: ${timeEntryJson}`);
+            return;
+        }
         const task = tasksById[timeEntry.task.id];
-        if (!task) throw new Error(`Cannot find task for time entry: ${timeEntryJson}`);
+
+        if (!task) {
+            console.error(`Cannot find task for time entry: ${timeEntryJson}`);
+            return;
+        }
 
         return {
-            taskId: timeEntry.task.id,
-            taskName: timeEntry.task.name,
+            username: timeEntry.user.username,
+            taskId: task.id,
+            taskName: task.name,
+            list: { name: task.list.name || "UNKNOWN" },
             projectName: [task.folder.name, task.list.name].join(" - "),
             date: new Date(parseInt(timeEntry.start)),
             duration: parseInt(timeEntry.duration) / 1000 / 3600,
+            note: timeEntry.description,
+            billable: timeEntry.billable,
         };
     }
 
-    private getData(dateRange: DateRange): FutureData<TimeEntriesInfo> {
+    private getData(options: TimeSummaryRepositoryGetOptions): FutureData<TimeEntriesInfo> {
         const { api, userFilter: config } = this;
         const { userEmail } = config;
+
         const team$ = api
             .getTeams()
-            .map(teams => teams.find(team => team.name === config.teamName))
-            .orError("Team not found");
+            .map(teams => {
+                console.debug(`Teams: ${teams.map(t => t.name).join(", ")}`);
+                return teams.find(team => team.name === config.teamName);
+            })
+            .flatMap(
+                (team): Future<Team> =>
+                    team
+                        ? Future.success(team)
+                        : Future.error(new Error(`Team not found: ${config.teamName}`))
+            );
 
         return team$.flatMap(team => {
             const timeEntries$ = api
                 .getTimeEntries({
                     teamId: team.id,
-                    startDate: dateRange.start,
-                    endDate: dateRange.end,
+                    startDate: options.start,
+                    endDate: options.end,
+                    assignee: options.allUsers
+                        ? team.members.map(member => member.user.id)
+                        : team.members
+                              .filter(member => member.user.email === this.userFilter.userEmail)
+                              .map(member => member.user.id),
                 })
-                .map(timeEntries => timeEntries.filter(entry => entry.user.email === userEmail));
+                .map(timeEntries =>
+                    timeEntries.filter(entry => !userEmail || entry.user.email === userEmail)
+                );
 
             return timeEntries$.flatMap(timeEntries => {
                 const tasks$ = _(timeEntries)
@@ -68,7 +98,7 @@ export class TimeSummaryClickupRepository {
                     .map(task => api.getTask({ taskId: task.id }))
                     .value();
 
-                return Future.parallel(tasks$, { maxConcurrency: 1 }).map(tasks => {
+                return Future.parallel(tasks$, { concurrency: 1 }).map(tasks => {
                     return { timeEntries, tasks };
                 });
             });

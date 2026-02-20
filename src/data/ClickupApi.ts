@@ -1,21 +1,30 @@
 import _ from "lodash";
 import QueryString from "qs";
 import axiosCacheAdapter from "axios-cache-adapter";
-
-import { ApiDate, Folder, FolderId, FutureData, GetTasksOptions, TaskId } from "./ClickupApi.types";
-import { List, Space, SpaceId, Task, Team, TimeEntry } from "./ClickupApi.types";
-import { Future, wait } from "../utils/future";
-import { axiosRequest, defaultBuilder, DefaultError } from "./axios/future-axios";
-import { FilesystemStore } from "./axios/FilesystemStore";
 import { AxiosInstance } from "axios";
 
-const maxRequestPerMinute = 100;
-const _minRequestTime = 60 / maxRequestPerMinute;
+import {
+    ApiDate,
+    Folder,
+    FolderId,
+    FutureData,
+    GetTasksOptions,
+    ListId,
+    TaskId,
+    TaskToSave,
+    UserId,
+} from "./ClickupApi.types";
+import { List, Space, SpaceId, Task, Team, TimeEntry } from "./ClickupApi.types";
+import { Future } from "../utils/future";
+import { axiosRequest, defaultBuilder } from "./axios/future-axios";
+import { FilesystemStore } from "./axios/FilesystemStore";
+import assert from "assert";
+
 const initialPage = 0;
 
 export class ClickupApi {
     instance: AxiosInstance;
-    baseUrl = "https://app.clickup.com/api/v2";
+    baseUrl = "https://api.clickup.com/api/v2";
 
     constructor(private options: { token: string; cacheDir: string }) {
         const store = new FilesystemStore({ cacheDir: options.cacheDir });
@@ -33,17 +42,23 @@ export class ClickupApi {
         const query = QueryString.stringify(params, { addQueryPrefix: true });
         const url = this.baseUrl + endpoint + query;
 
-        const data$ = axiosRequest<DefaultError, T>(this.instance, defaultBuilder, {
+        return axiosRequest<T>(this.instance, defaultBuilder, {
             headers: { Authorization: this.options.token },
             method: "GET",
-            url,
-            cache: {
-                ignoreCache: !cache,
-            },
+            url: url,
+            cache: { ignoreCache: !cache },
         });
+    }
 
-        //return withMinTime(data$, minRequestTime);
-        return data$;
+    private post<T>(endpoint: string, data: object): FutureData<T> {
+        const url = this.baseUrl + endpoint;
+
+        return axiosRequest<T>(this.instance, defaultBuilder, {
+            headers: { Authorization: this.options.token },
+            method: "POST",
+            url: url,
+            data: data,
+        });
     }
 
     public getTeams(): FutureData<Team[]> {
@@ -54,19 +69,25 @@ export class ClickupApi {
         teamId: string;
         startDate: Date;
         endDate: Date;
+        assignee: UserId[] | undefined;
     }): FutureData<TimeEntry[]> {
-        const { teamId, startDate, endDate } = options;
+        const { teamId, startDate, endDate, assignee } = options;
         return this.get<{ data: TimeEntry[] }>(`/team/${teamId}/time_entries`, {
             cache: false,
             params: {
                 start_date: getApiDate(startDate),
                 end_date: getApiDate(endDate),
+                ...(assignee ? { assignee: assignee.join(",") } : {}),
             },
         }).map(res => res.data);
     }
 
     public getTask(options: { taskId: TaskId }): FutureData<Task> {
         return this.get<Task>(`/task/${options.taskId}`);
+    }
+
+    public saveTask(task: TaskToSave): FutureData<Task> {
+        return this.post<Task>(`/list/${task.list.id}/task`, task);
     }
 
     public getSpaces(options: { teamId: string }): FutureData<Space[]> {
@@ -87,32 +108,38 @@ export class ClickupApi {
     }
 
     public getTasks(options: GetTasksOptions): FutureData<Task[]> {
-        const page = options.page || initialPage;
-        const url = `/list/${options.listId}/task?include_closed=true&subtasks=true&page=${page}`;
+        const { listId, page } = options;
 
-        return this.get<{ tasks: Task[] }>(url)
-            .map(res => res.tasks)
-            .flatMap(tasks =>
-                tasks.length >= 100 ? this.getNextPageTasks(tasks, options) : Future.success(tasks)
-            );
+        switch (page.type) {
+            case "single":
+                assert(page.number > 0, "Page number must be greater than 0");
+                return this.getTasksForPage({ listId, page: page.number - 1 });
+            case "all":
+                return Future.block(async $ => {
+                    const tasks: Task[] = [];
+                    let currentPage = initialPage;
+
+                    while (true) {
+                        const pageTasks = await $(
+                            this.getTasksForPage({ listId, page: currentPage })
+                        );
+                        tasks.push(...pageTasks);
+                        if (pageTasks.length < 100) break;
+                        currentPage++;
+                    }
+
+                    return tasks;
+                });
+        }
     }
 
-    private getNextPageTasks(tasks: Task[], options: GetTasksOptions): FutureData<Task[]> {
-        const prevPage = options.page || initialPage;
-
-        return this.getTasks({ ...options, page: prevPage + 1 }).map(nextPageTasks =>
-            _.concat(tasks, nextPageTasks)
-        );
+    private getTasksForPage(options: { listId: ListId; page: number }): FutureData<Task[]> {
+        const page = options.page;
+        const url = `/list/${options.listId}/task?include_closed=true&subtasks=true&page=${page}`;
+        return this.get<{ tasks: Task[] }>(url).map(res => res.tasks);
     }
 }
 
 function getApiDate(date: Date): ApiDate {
     return date.getTime().toString();
-}
-
-export function withMinTime<Error, Data>(
-    data$: Future<Error, Data>,
-    minTime: number
-): Future<Error, Data> {
-    return Future.join2(data$, wait(minTime)).map(([data]) => data);
 }
