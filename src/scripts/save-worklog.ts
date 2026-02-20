@@ -16,7 +16,6 @@ function main(args: SaveWorkLogArgs): void {
             startTime: Time.fromString(args.startTime),
             endTime: Time.fromString(args.endTime),
             signature: args.signature,
-            userLegalId: args.userLegalId,
             userId: args.userId,
         },
         from: startDate,
@@ -57,7 +56,6 @@ const saveWorkLogCommand = command({
     description: "Save worklogs as a ClickUp task",
     args: {
         date: option({ long: "date", description: "Date (YYYY-MM-DD)" }),
-        userLegalId: option({ long: "user-legal-id", description: "User legal ID (NIF)" }),
         userId: option({ long: "user-id", description: "ClickUp user ID" }),
         listId: option({ long: "list-id", description: "ClickUp list ID" }),
         startTime: option({ long: "start-time", description: "Start time (HH:MM)" }),

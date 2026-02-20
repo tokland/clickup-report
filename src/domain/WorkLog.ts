@@ -8,7 +8,6 @@ export type WorkLogAttrs = {
     startTime: Time;
     endTime: Time;
     signature: string;
-    userLegalId: string;
 };
 
 export class WorkLog extends Struct<WorkLogAttrs>() {

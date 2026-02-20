@@ -21,14 +21,12 @@ export class SaveWorklogUseCase {
             });
 
             console.debug(`Get existing: ${command.from.asString()} -> ${command.to.asString()}`);
-            const existingWorklogs = await $(
-                this.worklogRepository.get({ from: command.from, to: command.to })
-            );
+            const existingWorklogs = await $(this.worklogRepository.get(command));
 
             for (const worklog of workLogs) {
-                const alreadyExists = existingWorklogs.some(w => w.day.equals(worklog.day));
+                const worklogExists = existingWorklogs.some(w => w.day.equals(worklog.day));
 
-                if (alreadyExists) {
+                if (worklogExists) {
                     console.debug(`Worklog already exists, skipping: ${worklog.asString()}`);
                 } else if (!worklog.day.isWorkingDay()) {
                     console.debug(`Skipping non-working day: ${worklog.asString()}`);

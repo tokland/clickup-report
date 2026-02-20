@@ -94,7 +94,6 @@ type BaseTask = {
         type: "short_text" | "text" | "signature" | "date";
         value: string;
         value_options?: unknown;
-        required: boolean;
     }>;
 };
 
