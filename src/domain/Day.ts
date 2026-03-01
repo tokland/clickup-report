@@ -1,5 +1,5 @@
 /**
- * Represents a calendar day with year, month, and day properties.
+ * A calendar day (year, month, and day).
  */
 export class Day {
     static weekDays: Weekday[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -45,7 +45,7 @@ export class Day {
             : undefined;
         const dayS = pattern.includes("DD") ? dateStr.substr(pattern.indexOf("DD"), 2) : undefined;
 
-        if (yearS === undefined || monthS === undefined || dayS === undefined) {
+        if (!yearS || !monthS || !dayS) {
             throw new Error(`Invalid date string: ${dateStr}`);
         }
         return new Day(parseInt(yearS), parseInt(monthS), parseInt(dayS));
@@ -53,8 +53,7 @@ export class Day {
 
     // Day(2024, 1, 15).weekday => "Tuesday"
     get weekday(): Weekday {
-        const date = this.toDate();
-        const dayOfWeek = date.getUTCDay(); // 0 (Sunday) to 6 (Saturday)
+        const dayOfWeek = this.toDate().getUTCDay(); // 0 (Sunday) to 6 (Saturday)
         const weekday = Day.weekDays[(dayOfWeek + 6) % 7]; // Adjust so that Monday is 0
         if (!weekday) {
             throw new Error(`Invalid day of week: ${dayOfWeek}`);
@@ -73,7 +72,7 @@ export class Day {
         return date >= startDay.toDate() && date <= endDayInclusive.toDate();
     }
 
-    // Day(2024, 1, 15).isWorkingDay() => true (if it's not Saturday or Sunday)
+    // Day(2024, 1, 15).isWorkingDay() => true (as it's a Monday, not a Saturday or Sunday)
     isWorkingDay(): boolean {
         return this.weekday !== "Sat" && this.weekday !== "Sun";
     }
@@ -87,9 +86,9 @@ export class Day {
         return pattern.replace("DD", dayStr).replace("MM", monthStr).replace("YYYY", yearStr);
     }
 
-    // Day(2024, 1, 15).asString() => "2024-01-15"
+    // Day(2024, 1, 15).asString() => "2024-01-15 [Mon]"
     asString(): string {
-        return this.format("YYYY-MM-DD");
+        return `${this.format("YYYY-MM-DD")} [${this.weekday}]`;
     }
 
     // Day(2024, 1, 15).toDate() => new Date(2024, 0, 15)

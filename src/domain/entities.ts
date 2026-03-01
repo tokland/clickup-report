@@ -1,4 +1,6 @@
 import { Future } from "../utils/future";
+import { Day } from "./Day";
+import { Struct } from "./Struct";
 
 export type TimeSummary = {
     dateRange: DateRange;
@@ -23,5 +25,12 @@ export type DateRange = {
     start: Date;
     end: Date;
 };
+
+type OffDay_ = {
+    userId: string;
+    day: Day;
+};
+
+export class OffDay extends Struct<OffDay_>() {}
 
 export type Async<Data> = Future<Data>;

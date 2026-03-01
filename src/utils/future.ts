@@ -2,6 +2,7 @@ import {
     buildCancellablePromise,
     CancellablePromise,
     Cancellation,
+    pseudoCancellable,
 } from "real-cancellable-promise";
 
 type ParallelOptions = { concurrency: number };
@@ -22,6 +23,10 @@ export class Future<T> {
 
     static error<T>(error: Error): Future<T> {
         return new Future(() => CancellablePromise.reject(error));
+    }
+
+    static fromPromise<T>(promise: Promise<T>): Future<T> {
+        return new Future(() => pseudoCancellable(promise));
     }
 
     static fromComputation<T>(
@@ -48,6 +53,13 @@ export class Future<T> {
                 onError(new Error("Unknown error"));
             }
         }).cancel;
+    }
+
+    tap(cb: (data: T) => void): Future<T> {
+        return this.map(data => {
+            cb(data);
+            return data;
+        });
     }
 
     map<U>(fn: (data: T) => U): Future<U> {

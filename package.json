@@ -4,10 +4,13 @@
     "main": "index.js",
     "license": "MIT",
     "dependencies": {
+        "@google-cloud/local-auth": "^3",
         "argparse": "^2.0.1",
         "axios": "^0.21.1",
         "axios-cache-adapter": "^2.7.3",
         "fluture": "^13.0.1",
+        "googleapis": "^171",
+        "google-auth-library": "10.5.0",
         "lodash": "^4.17.21",
         "luxon": "^1.26.0",
         "purify-ts": "^0.16.1",
@@ -28,8 +31,11 @@
         "eslint": "^8.57.0",
         "tsx": "^4.21.0"
     },
+    "resolutions": {
+        "google-auth-library": "10.5.0"
+    },
     "scripts": {
         "lint": "eslint 'src/**/*.{js,ts,tsx}' --fix",
-        "run-script": "tsx"
+        "run-script": "NODE_NO_WARNINGS=1 tsx"
     }
 }

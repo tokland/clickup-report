@@ -2,13 +2,14 @@ import { WorkLogClickupRepository } from "../data/WorkLogClickupRepository";
 import { Day } from "../domain/Day";
 import { Time } from "../domain/Time";
 import { SaveWorklogUseCase, SaveWorkLogCommand } from "../domain/usecases/SaveWorklogUseCase";
+import { OffDayGoogleCalendarRepository } from "../data/OffDayGoogleCalendarRepository";
 import { getBaseConfig } from "./common";
 
-import { command, option, flag, run } from "cmd-ts";
+import { command, option, flag, run, Type, optional } from "cmd-ts";
 
-function main(args: SaveWorkLogArgs): void {
+function saveWorklog(args: SaveWorkLogArgs): void {
     const { api } = getBaseConfig();
-    const timeSummaryRepository = new WorkLogClickupRepository(api, { listId: args.listId });
+    const workLogRepository = new WorkLogClickupRepository(api, { listId: args.listId });
     const [startDate, endDate] = getDateRange(args.date, "YYYY-MM-DD");
 
     const command: SaveWorkLogCommand = {
@@ -21,12 +22,18 @@ function main(args: SaveWorkLogArgs): void {
         from: startDate,
         to: endDate,
         dryRun: args.dryRun,
+        userName: args.offDays?.namePattern,
     };
 
-    const saveWorklog = new SaveWorklogUseCase(timeSummaryRepository);
+    const offDayRepository = args.offDays
+        ? new OffDayGoogleCalendarRepository({
+              calendarId: args.offDays.calendarId,
+              credentialsPath: args.offDays.credentialsPath,
+          })
+        : undefined;
 
-    saveWorklog.execute(command).run(
-        () => console.log("Done"),
+    new SaveWorklogUseCase({ workLogRepository, offDayRepository }).execute(command).run(
+        () => {},
         err => console.error("Error saving worklogs:", err)
     );
 }
@@ -51,6 +58,24 @@ function getDateRange(s: string, pattern: string): [Day, Day] {
 
 type SaveWorkLogArgs = Parameters<typeof saveWorkLogCommand.handler>[0];
 
+const googleCalendarEventSource: Type<
+    string,
+    { calendarId: string; credentialsPath: string; namePattern: string }
+> = {
+    async from(str) {
+        const parts = str.split(":");
+        const [calendarId, credentialsPath, namePattern] = parts;
+
+        if (parts.length !== 3 || !calendarId || !credentialsPath || !namePattern) {
+            throw new Error(
+                `Expected format "CALENDAR_ID:CREDENTIALS_PATH:NAME_PATTERN", got "${str}"`
+            );
+        }
+
+        return { calendarId, credentialsPath, namePattern };
+    },
+};
+
 const saveWorkLogCommand = command({
     name: "save-worklog",
     description: "Save worklogs as a ClickUp task",
@@ -61,10 +86,15 @@ const saveWorkLogCommand = command({
         startTime: option({ long: "start-time", description: "Start time (HH:MM)" }),
         endTime: option({ long: "end-time", description: "End time (HH:MM)" }),
         signature: option({ long: "signature", description: "Signature" }),
-        dryRun: flag({ long: "dry-run", description: "Dry run (don't actually save the worklog)" }),
+        dryRun: flag({ long: "dry-run", description: "Dry run (don't actually save any worklog)" }),
+        offDays: option({
+            type: optional(googleCalendarEventSource),
+            long: "off-days-source",
+            description: "Google off days source (e.g. CALENDAR_ID:CREDENTIALS_PATH:NAME_PATTERN)",
+        }),
     },
     handler: args => {
-        main(args);
+        saveWorklog(args);
     },
 });
 
