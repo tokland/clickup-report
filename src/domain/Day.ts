@@ -4,7 +4,22 @@
 export class Day {
     static weekDays: Weekday[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-    private constructor(public year: number, public month: number, public day: number) {}
+    private constructor(public year: number, public month: number, public day: number) {
+        Day.validate({ year, month, day });
+    }
+
+    private static validate(options: { year: number; month: number; day: number }) {
+        const { year, month, day } = options;
+        const date = new Date(Date.UTC(year, month - 1, day));
+
+        if (
+            date.getUTCFullYear() !== year ||
+            date.getUTCMonth() + 1 !== month ||
+            date.getUTCDate() !== day
+        ) {
+            throw new Error(`Invalid date: year=${year}, month=${month}, day=${day}`);
+        }
+    }
 
     // Day.range(Day(2024, 1, 1), Day(2024, 1, 3)) => [Day(2024, 1, 1), Day(2024, 1, 2), Day(2024, 1, 3)]
     static range(startDay: Day, endDayInclusive: Day): Day[] {

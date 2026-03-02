@@ -11,18 +11,19 @@ export class OffDayGoogleCalendarRepository implements OffDayRepository {
         const events$ = getCalendarEvents(
             this.options.credentialsPath,
             this.options.calendarId,
-            options.name,
             options.from.format("YYYY-MM-DD"),
             options.to.format("YYYY-MM-DD")
         );
 
         return Future.fromPromise(events$).map((events): OffDay[] => {
-            return events.map(event =>
-                OffDay.create({
-                    userId: options.name,
-                    day: Day.fromString(event.day, "YYYY-MM-DD"),
-                })
-            );
+            return events
+                .filter(event => event.name.includes(options.name))
+                .map(event =>
+                    OffDay.create({
+                        name: event.name,
+                        day: Day.fromString(event.day, "YYYY-MM-DD"),
+                    })
+                );
         });
     }
 }

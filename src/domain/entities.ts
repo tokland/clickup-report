@@ -26,11 +26,15 @@ export type DateRange = {
     end: Date;
 };
 
-type OffDay_ = {
-    userId: string;
+type OffDayAttrs = {
+    name: string;
     day: Day;
 };
 
-export class OffDay extends Struct<OffDay_>() {}
+export class OffDay extends Struct<OffDayAttrs>() {
+    asString(): string {
+        return `${this.name} (${this.day.asString()})`;
+    }
+}
 
 export type Async<Data> = Future<Data>;

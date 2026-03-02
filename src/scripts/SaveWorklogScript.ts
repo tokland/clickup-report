@@ -85,7 +85,7 @@ const saveWorkLogCommand = command({
         listId: option({ long: "list-id", description: "ClickUp list ID" }),
         startTime: option({ long: "start-time", description: "Start time (HH:MM)" }),
         endTime: option({ long: "end-time", description: "End time (HH:MM)" }),
-        signature: option({ long: "signature", description: "Signature" }),
+        signature: option({ long: "signature", description: "Signature (Your name)" }),
         dryRun: flag({ long: "dry-run", description: "Dry run (don't actually save any worklog)" }),
         offDays: option({
             type: optional(googleCalendarEventSource),

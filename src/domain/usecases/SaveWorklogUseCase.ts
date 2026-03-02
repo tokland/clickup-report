@@ -103,7 +103,7 @@ export class SaveWorklogUseCase {
                 })
                 .tap(offDays => {
                     offDays.forEach(offDay => {
-                        console.debug(`Off day: ${offDay.day.asString()}`);
+                        console.debug(`Off day: ${offDay.asString()}`);
                     });
                 });
         }

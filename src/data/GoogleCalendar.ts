@@ -34,7 +34,6 @@ async function getAuthClient(options: { credentialsPath: string }): Promise<OAut
 export async function getCalendarEvents(
     credentialsPath: string,
     calendarId: string,
-    name: string,
     startDate: string, // "YYYY-MM-DD"
     endDate: string // "YYYY-MM-DD"
 ): Promise<CalendarDayEvent[]> {
@@ -74,9 +73,7 @@ export async function getCalendarEvents(
         while (cursor < endDate || (!isAllDay && cursor <= endDate)) {
             const dayStr = cursor.toISOString().slice(0, 10);
             const eventName = event.summary ?? "";
-            if (eventName.includes(name)) {
-                days.add({ day: dayStr, name: eventName });
-            }
+            days.add({ day: dayStr, name: eventName });
             cursor.setDate(cursor.getDate() + 1);
         }
     }
