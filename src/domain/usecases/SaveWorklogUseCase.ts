@@ -64,10 +64,10 @@ export class SaveWorklogUseCase {
                 return Future.void();
             default:
                 if (dryRun) {
-                    console.debug(`${worklog.asString()} [not saved, dry run]`);
+                    console.debug(`${worklog.asString()} [to save, but dry run]`);
                     return Future.void();
                 } else {
-                    console.debug(`${worklog.asString()} [saved]`);
+                    console.debug(`${worklog.asString()} [TO SAVE]`);
                     return workLogRepository.save(worklog).toVoid();
                 }
         }

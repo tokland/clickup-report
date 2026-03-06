@@ -4,7 +4,11 @@
 export class Day {
     static weekDays: Weekday[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-    private constructor(public year: number, public month: number, public day: number) {
+    private constructor(
+        public year: number,
+        public month: number, // 1-based month (1 for January, 12 for December)
+        public day: number
+    ) {
         Day.validate({ year, month, day });
     }
 
@@ -19,6 +23,12 @@ export class Day {
         ) {
             throw new Error(`Invalid date: year=${year}, month=${month}, day=${day}`);
         }
+    }
+
+    // Day.today() => Day(2024, 1, 15) (if today is January 15, 2024)
+    static today(): Day {
+        const now = new Date();
+        return Day.fromDate(now);
     }
 
     // Day.range(Day(2024, 1, 1), Day(2024, 1, 3)) => [Day(2024, 1, 1), Day(2024, 1, 2), Day(2024, 1, 3)]
@@ -111,10 +121,10 @@ export class Day {
         return new Date(this.msFromEpoch());
     }
 
-    // Day(2024, 1, 15).msFromEpoch() => 1705132800000
+    // Day(2024, 1, 15).msFromEpoch() => 1705132800000 (UNIX epoch is January 1, 1970, 00:00:00 UTC)
     msFromEpoch(): number {
         return Date.UTC(this.year, this.month - 1, this.day);
     }
 }
 
-type Weekday = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
+export type Weekday = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";

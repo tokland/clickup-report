@@ -2,7 +2,10 @@
  * Represent a moment in a day with hours and minutes (HH:MM)
  */
 export class Time {
-    private constructor(public hours: number, public minutes: number) {}
+    private constructor(
+        public hours: number, //
+        public minutes: number
+    ) {}
 
     // Time.fromString("14:30") => Time(14, 30)
     static fromString(timeStr: string): Time {
