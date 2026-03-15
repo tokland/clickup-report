@@ -88,7 +88,11 @@ export class Day {
 
     // Day(2024, 1, 15).equals(Day(2024, 1, 15)) => true
     equals(other: Day): boolean {
-        return this.year === other.year && this.month === other.month && this.day === other.day;
+        return (
+            this.year === other.year && //
+            this.month === other.month &&
+            this.day === other.day
+        );
     }
 
     // Day(2024, 1, 15).isBetween(Day(2024, 1, 1), Day(2024, 1, 31)) => true

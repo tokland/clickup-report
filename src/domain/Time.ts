@@ -1,5 +1,5 @@
 /**
- * Represent a moment in a day with hours and minutes (HH:MM)
+ * A moment in a day (hour and minute).
  */
 export class Time {
     private constructor(
