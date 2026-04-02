@@ -38,7 +38,7 @@ function saveWorklog(args: SaveWorkLogArgs): void {
     );
 }
 
-function getDateFromString(s: string): Day {
+export function getDateFromString(s: string): Day {
     switch (true) {
         // Relative day, e.g. "-5" means 5 days ago from today, "+3" means 3 days in the future
         case /^[-+]?\d+$/.test(s): {
@@ -55,7 +55,7 @@ function getDateFromString(s: string): Day {
 // getDateRange("2024-06-01..2024-06-30", "YYYY-MM-DD") -> [Day(2024, 06, 01), Day(2024, 06, 30)]
 // getDateRange("2024/06/01", "YYYY/MM/DD")             -> [Day(2024, 06, 01), Day(2024, 06, 01)]
 // getDataRange("-5..1") -> [Day(2024, 06, 10), Day(2024, 06, 16)] (if today is June 15, 2024)
-function getDateRange(s: string): [Day, Day] {
+export function getDateRange(s: string): [Day, Day] {
     const parts = s.split("..");
     const [part1, part2] = parts;
 
@@ -111,4 +111,6 @@ const saveWorkLogCommand = command({
     },
 });
 
-run(saveWorkLogCommand, process.argv.slice(2));
+if (require.main === module) {
+    run(saveWorkLogCommand, process.argv.slice(2));
+}

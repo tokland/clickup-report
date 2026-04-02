@@ -1,5 +1,5 @@
 import { Day } from "./Day";
-import { Async, DateRange, OffDay, TimeSummary } from "./entities";
+import { Async, DateRange, OffDay, TimeEntry, TimeSummary } from "./entities";
 import { WorkLog } from "./WorkLog";
 
 export interface TimeSummaryRepository {
@@ -13,6 +13,10 @@ export interface WorkLogRepository {
 
 export interface OffDayRepository {
     getList(options: { name: string; from: Day; to: Day }): Async<OffDay[]>;
+}
+
+export interface TimeEntryRepository {
+    get(options: { userId: string; from: Day; to: Day }): Async<TimeEntry[]>;
 }
 
 export type TimeSummaryRepositoryGetOptions = DateRange & { allUsers: boolean };
