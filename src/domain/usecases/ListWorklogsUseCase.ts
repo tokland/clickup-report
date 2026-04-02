@@ -53,7 +53,7 @@ export class ListWorklogsUseCase {
 
         return workLogRepository.get(command).map(worklogs => {
             return _(worklogs)
-                .sortBy(worklog => worklog.day.toString())
+                .sortBy(worklog => worklog.day.asString())
                 .value();
         });
     }
