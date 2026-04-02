@@ -11,3 +11,5 @@ bak
 /data/
 /config.json
 /NOTES*
+client_secret*json
+token.json
