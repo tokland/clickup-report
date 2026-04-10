@@ -14,13 +14,43 @@ export class Time {
         return new Time(hours, minutes);
     }
 
-    // Time.fromString("14:30") => Time(14, 30)
+    // Time.fromString("14:30")  => Time(14, 30)
+    // Time.fromString("2h") => Time(2, 0)
+    // Time.fromString("30m") => Time(0, 30)
+    // Time.fromString("14h30") => Time(14, 30)
+    // Time.fromString("14h30m") => Time(14, 30)
     static fromString(timeStr: string): Time {
-        const [hoursStr, minutesStr] = timeStr.split(":");
-        if (hoursStr === undefined || minutesStr === undefined) {
-            throw new Error(`Invalid time string: ${timeStr}`);
-        }
-        return new Time(parseInt(hoursStr), parseInt(minutesStr));
+        const text = timeStr?.trim().toLowerCase() ?? "";
+        if (!text) throw new Error("Time.fromString: empty string");
+
+        const parse = (pattern: RegExp): RegExpExecArray | null => pattern.exec(text);
+        const toInt = (value: string | undefined): number => Number(value ?? 0);
+
+        const parseClockTime = (): Time | null => {
+            const match = parse(/^(\d{1,2}):(\d{1,2})$/);
+            return match ? new Time(toInt(match[1]), toInt(match[2])) : null;
+        };
+
+        const parseHourMinuteTime = (): Time | null => {
+            const match = parse(/^(\d+)\s*h(?:\s*(\d+)\s*m?)?$/);
+            return match ? new Time(toInt(match[1]), toInt(match[2])) : null;
+        };
+
+        const parseMinuteTime = (): Time | null => {
+            const match = parse(/^(\d+)\s*m$/);
+            return match ? new Time(0, toInt(match[1])) : null;
+        };
+
+        const throw_ = (msg: string): never => {
+            throw new Error(msg);
+        };
+
+        return (
+            parseClockTime() ||
+            parseHourMinuteTime() ||
+            parseMinuteTime() ||
+            throw_(`Time.fromString: invalid time format: "${timeStr}"`)
+        );
     }
 
     // Time.zero() => Time(0, 0)
@@ -31,6 +61,11 @@ export class Time {
     // Time.sum([Time(1, 30), Time(2, 45)]) => Time(4, 15)
     static sum(times: Time[]): Time {
         return times.reduce((sum, time) => sum.add(time), Time.zero());
+    }
+
+    // Time(2, 30).valueOf() => 150
+    valueOf(): number {
+        return this.hours * 60 + this.minutes;
     }
 
     // Time(2, 30).add(Time(1, 45)) => Time(4, 15)
@@ -49,10 +84,10 @@ export class Time {
         return new Time(hours, minutes);
     }
 
-    // Time(2, 45).asString() => "02h45m"
+    // Time(2, 45).asString() => "02:45"
     asString(): string {
         const hoursStr = this.hours.toString().padStart(2, "0");
         const minutesStr = this.minutes.toString().padStart(2, "0");
-        return `${hoursStr}h${minutesStr}m`;
+        return `${hoursStr}:${minutesStr}`;
     }
 }

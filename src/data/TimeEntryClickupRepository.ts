@@ -30,7 +30,7 @@ export class TimeEntryClickupRepository implements TimeEntryRepository {
                 api.getTimeEntries({
                     teamId: team.id,
                     startDate: from.toDate(),
-                    endDate: to.toDate(),
+                    endDate: to.addDays(1).toDate(),
                     assignee: [parseInt(userId)],
                 })
             );

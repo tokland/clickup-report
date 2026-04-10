@@ -24,17 +24,25 @@ export class ListWorklogsUseCase {
         return Future.block(async $ => {
             const worklogs = await $(this.getWorklogs(command));
             const timeEntries = await $(this.getTimeEntries(command));
+            const daysWithTimeEntries = _(timeEntries)
+                .map(timeEntry => timeEntry.start.toLocaleDateString())
+                .uniq()
+                .value();
 
             const expectedWorkedHours = Time.sum(worklogs.map(worklog => worklog.totalHours));
             const actualWorkedHours = Time.sum(timeEntries.map(timeEntry => timeEntry.duration));
-            const diffTime = actualWorkedHours.subtract(expectedWorkedHours);
+            const [hours1, hours2] =
+                actualWorkedHours < expectedWorkedHours
+                    ? [actualWorkedHours, expectedWorkedHours]
+                    : [expectedWorkedHours, actualWorkedHours];
+            const diffTime = hours2.subtract(hours1);
+            const sign = hours1 == actualWorkedHours ? "-" : "+";
 
-            for (const worklog of worklogs) {
-                console.debug(worklog.asString());
-            }
-            console.debug(`Expected worked hours: ${expectedWorkedHours.asString()}`);
-            console.debug(`Actual worked hours: ${actualWorkedHours.asString()}`);
-            console.debug(`Difference: ${diffTime.asString()}`);
+            console.debug(`Expected: ${expectedWorkedHours.asString()} (${worklogs.length} days)`);
+            console.debug(
+                `Actual  : ${actualWorkedHours.asString()} (${daysWithTimeEntries.length} dys)`
+            );
+            console.debug(`Difference: ${sign}${diffTime.asString()}`);
         });
     }
 
