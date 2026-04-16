@@ -40,7 +40,7 @@ export class ListWorklogsUseCase {
 
             console.debug(`Expected: ${expectedWorkedHours.asString()} (${worklogs.length} days)`);
             console.debug(
-                `Actual  : ${actualWorkedHours.asString()} (${daysWithTimeEntries.length} dys)`
+                `Actual  : ${actualWorkedHours.asString()} (${daysWithTimeEntries.length} days)`
             );
             console.debug(`Difference: ${sign}${diffTime.asString()}`);
         });
