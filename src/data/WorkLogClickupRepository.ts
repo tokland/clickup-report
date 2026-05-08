@@ -12,7 +12,10 @@ type ClickupReferences = {
 };
 
 export class WorkLogClickupRepository implements WorkLogRepository {
-    constructor(private api: ClickupApi, private references: ClickupReferences) {}
+    constructor(
+        private api: ClickupApi,
+        private references: ClickupReferences
+    ) {}
 
     get(options: { from: Day; to: Day }): Async<WorkLog[]> {
         return this.api
@@ -87,7 +90,7 @@ export class WorkLogClickupRepository implements WorkLogRepository {
                     id: "7130e533-ee87-4eb3-b655-affb46d5975b",
                     name: "11.- Total Extraordinarias",
                     type: "short_text",
-                    value: "",
+                    value: "0",
                 },
                 {
                     id: "58b44f3b-c11e-4071-b7c7-6a15f955bb35",
