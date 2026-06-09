@@ -19,7 +19,7 @@ export class WorkLogClickupRepository implements WorkLogRepository {
 
     get(options: { from: Day; to: Day }): Async<WorkLog[]> {
         return this.api
-            .getTasks({ listId: this.references.listId, page: { type: "single", number: 1 } })
+            .getTasks({ listId: this.references.listId, page: { type: "all" } })
             .map(tasks => {
                 return _(tasks)
                     .map(task => {
